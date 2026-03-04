@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+// Inner component uses useSearchParams — must be inside Suspense
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
@@ -54,12 +55,10 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     }
-    // On success, browser is redirected — no further action needed here
   }
 
   return (
     <div className="w-full max-w-sm space-y-8">
-      {/* Logo / wordmark */}
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">Shelf</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -67,14 +66,12 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="rounded-md bg-destructive/15 border border-destructive/30 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {/* Email / password form */}
       <form onSubmit={handleEmailSignIn} className="space-y-4">
         <div className="space-y-1">
           <label htmlFor="email" className="text-sm font-medium">
@@ -117,7 +114,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-border" />
@@ -127,7 +123,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Google OAuth */}
       <button
         type="button"
         onClick={handleGoogleSignIn}
@@ -138,14 +133,25 @@ export default function LoginPage() {
         Continue with Google
       </button>
 
-      {/* Sign-up link */}
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-foreground underline underline-offset-4 hover:opacity-80">
+        <Link
+          href="/signup"
+          className="font-medium text-foreground underline underline-offset-4 hover:opacity-80"
+        >
           Sign up
         </Link>
       </p>
     </div>
+  );
+}
+
+// Suspense boundary required by Next.js for any page that uses useSearchParams
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
 
