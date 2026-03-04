@@ -159,7 +159,7 @@ create policy "Avatars are publicly readable"
 - `src/app/api/books/search/route.ts` — GET `/api/books/search?q=...`. Queries Google Books API server-side (key never exposed to client). Falls back to Open Library if Google Books returns 0 results. Caches identical queries for 60 s via `next: { revalidate: 60 }`. Returns `{ results: BookSearchResult[] }`.
 - `src/app/api/books/cache/route.ts` — POST `/api/books/cache`. Accepts a `BookSearchResult` body. Checks for existing book by `google_books_id` or `isbn_13`; inserts if new. Upserts authors by name (manual SELECT-then-INSERT to avoid duplicates, since `authors.name` has no unique DB constraint). Links via `book_authors`. Returns `{ book_id: string }`.
 - `src/app/(app)/search/page.tsx` — Client component search page. Debounced input (300 ms). Shows skeleton cards while loading, results grid (2–5 columns responsive), empty state, and error state. Clicking a card calls `/api/books/cache`, then navigates to `/books/[id]`.
-- `src/app/(app)/books/[id]/page.tsx` — Placeholder book detail page. Fetches book + authors from DB (joined via `book_authors`). Shows cover, title, subtitle, authors, year, page count, language, description. "Library actions coming soon" placeholder — will be replaced in Step 6.
+- `src/app/(app)/books/[id]/page.tsx` — Initial book detail page (cover, title, authors, year, page count, language, description). Library action panel added in Step 6.
 - `src/components/app-nav.tsx` — Added "Search" nav link.
 
 **Key decisions:**
@@ -167,9 +167,14 @@ create policy "Avatars are publicly readable"
 - Google Books thumbnail URLs are `http://` — these are upgraded to `https://` before returning. Next.js Image will reject `http://` URLs.
 - The cache route uses `(supabase as any)` for all DB operations — same type workaround as settings, pending proper CLI-generated types.
 - `maybeSingle()` is used for duplicate checks instead of `single()` to avoid a 406 error when no row is found.
-- `onConflict().ignoreDuplicates()` on `book_authors` insert handles the race condition where two parallel caches of the same book could both try to insert the same `book_authors` row.
+- `book_authors` insert uses `.upsert({ onConflict: "book_id,author_id", ignoreDuplicates: true })` — supabase-js v2 does not have a chained `.onConflict().ignoreDuplicates()` method; upsert is the correct API.
 
 **Note:** Requires `GOOGLE_BOOKS_API_KEY` in `.env.local` and Vercel. Without it, requests still work (Google Books allows ~1000 unauthenticated queries/day) but will be rate-limited sooner.
+
+**Bugs fixed post-completion (review pass):**
+- `book_authors` conflict handling was using non-existent supabase-js v2 API (silent runtime failure) → fixed to `.upsert({ ignoreDuplicates: true })`
+- `/auth/callback` `next` param was unvalidated (open redirect) → now validated to be a relative path only
+- Search page had a race condition where slow responses could overwrite faster newer ones → fixed with a sequence counter
 
 ---
 
