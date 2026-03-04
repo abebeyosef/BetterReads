@@ -35,6 +35,9 @@ export function AppNav({ profile }: { profile: UserRow }) {
             Shelf
           </Link>
           <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link href="/library" className="hover:text-foreground transition-colors">
+              Library
+            </Link>
             <Link href="/search" className="hover:text-foreground transition-colors">
               Search
             </Link>

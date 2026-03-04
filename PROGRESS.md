@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-04
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 1, Step 6 — Library Management
+**Next task:** Phase 1, Step 7 — Goodreads Import
 
 ---
 
@@ -173,9 +173,21 @@ create policy "Avatars are publicly readable"
 
 ---
 
-### Step 6 — Library Management ⬜ Not started
+### Step 6 — Library Management ✅ Complete (2026-03-04)
 
-Depends on: Steps 3, 5
+**What was built:**
+- `src/app/api/library/route.ts` — POST (upsert status/rating/dates) and DELETE (remove from library). Server validates status enum and rating range before touching DB.
+- `src/app/(app)/books/[id]/library-actions.tsx` — Client component on the book detail page. Status pill buttons (want to read / currently reading / read) update immediately. Expandable "Edit rating & dates" panel with interactive 5-star rating (click same star to clear) and date inputs. "Remove from library" in the same panel. Calls `router.refresh()` after each mutation to keep profile stats and library counts fresh.
+- `src/app/(app)/books/[id]/page.tsx` — Updated to fetch the user's existing `user_books` row and pass it as `initialUserBook` prop to `LibraryActions`. Added genre chips. Removed "coming soon" placeholder.
+- `src/app/(app)/library/page.tsx` — Full library view. Status tabs (Reading / Want to read / Read) with counts. Sort options (recently added / rating / title / finish date). Responsive 2–5 column book grid with cover images, title, author, and star rating badge overlay. Designed empty states per status with CTAs linking to search.
+- `src/components/app-nav.tsx` — Added "Library" nav link.
+
+**Key decisions:**
+- Library mutations go through `/api/library` (server route) rather than calling Supabase directly from the client, keeping the DB write pattern consistent with the rest of the app.
+- The POST handler uses `upsert` with `onConflict: "user_id,book_id"` so adding a book and updating it go through the same endpoint — no need for separate insert vs update logic.
+- Status tabs and sort are URL search params (`?status=read&sort=rating`) so the page is bookmarkable and the browser back button works correctly.
+- Star rating: clicking the currently selected star clears the rating (sets to null) — same UX as Letterboxd.
+- `router.refresh()` after mutations re-fetches the server-rendered library page and profile stats without a full page reload.
 
 ---
 
