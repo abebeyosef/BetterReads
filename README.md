@@ -11,6 +11,33 @@ A modern, social book-tracking web app — Goodreads but better, inspired by Let
 - **Charts:** Recharts
 - **Deployment:** Vercel
 
+---
+
+## ⚠️ IMPORTANT INSTRUCTIONS FOR CLAUDE CODE — READ BEFORE DOING ANYTHING ELSE
+
+This project may be worked on across multiple separate sessions, potentially by different Claude Code instances. To ensure continuity, you **must** maintain a detailed progress log at all times.
+
+### Mandatory logging rules
+
+1. **Before starting any work**, read [`PROGRESS.md`](./PROGRESS.md) in full to understand what has already been done, any decisions that were made, and any known issues or blockers.
+
+2. **After completing each task or sub-task**, immediately update `PROGRESS.md` with:
+   - Mark the task as complete (with date)
+   - What you built and the key files created or modified
+   - Why you made any non-obvious decisions (e.g. why you chose one approach over another)
+   - Any known limitations, shortcuts taken, or technical debt introduced
+   - Anything a future Claude Code session must know before continuing
+
+3. **If you are interrupted or stop mid-task**, update `PROGRESS.md` before stopping, noting exactly where you got to and what the next step is.
+
+4. **Never assume the next session will have context from this one.** Write notes as if explaining to someone who has never seen this codebase.
+
+5. **Commit `PROGRESS.md` with every git commit** — it should always be up to date in the repo.
+
+The progress log is at [`PROGRESS.md`](./PROGRESS.md). If it does not exist, create it immediately before starting work.
+
+---
+
 ## Getting Started
 
 ### 1. Install dependencies
@@ -66,18 +93,7 @@ supabase/
 
 See [`build-plan.md`](./build-plan.md) for the full project spec, data model, feature list, and 4-phase build sequence.
 
-**Current phase:** Phase 1 — Core Loop + Import (Weeks 1–3)
-
-### Phase 1 checklist
-- [ ] Project scaffolding ✅ (done)
-- [ ] Database schema ✅ (done — run `supabase/migrations/001_initial_schema.sql`)
-- [ ] Auth — email/password + Google OAuth
-- [ ] User profiles — create/edit, avatar upload
-- [ ] Book search — server-side Google Books API route, cache on click
-- [ ] Library management — add/remove, status, dates, ratings
-- [ ] Goodreads import — two-step modal, CSV parse, non-blocking match
-- [ ] Book detail page
-- [ ] Reviews — write, edit, delete
+See [`PROGRESS.md`](./PROGRESS.md) for the live status of every task.
 
 ## Key Architectural Rules
 
