@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-04
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 1, Step 4 — User Profiles
+**Next task:** Phase 1, Step 5 — Book Search
 
 ---
 
@@ -109,9 +109,46 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
-### Step 4 — User Profiles ⬜ Not started
+### Step 4 — User Profiles ✅ Complete (2026-03-04)
 
-Depends on: Step 3 (Auth)
+**What was built:**
+- `src/types/database.ts` — Full hand-written TypeScript types for all 13 tables + all enums, matching `001_initial_schema.sql`. Also exports convenience types: `UserRow`, `BookRow`, `UserBookRow`, `ReviewRow`, `ActivityEventRow`.
+- `next.config.ts` — Added `fzbqvopmlizieegapixf.supabase.co` to allowed image domains (for Supabase Storage avatars).
+- `src/components/app-nav.tsx` — Sticky top nav bar (client component). Shows "Shelf" logo + user avatar with Radix UI dropdown menu (Profile, Settings, Sign out). Accepts `UserRow` profile prop from the server layout.
+- `src/app/(app)/layout.tsx` — Updated to fetch `public.users` profile after auth check, render `<AppNav profile={profile} />`, and handle the edge case where the `handle_new_user` trigger may have failed (signs user out → redirects to `/login?error=profile_missing`).
+- `src/app/(app)/profile/page.tsx` — Own profile page. Shows avatar (with initials fallback), display_name, @username, member since date, bio, reading stats (read / currently reading / want to read counts), and "Edit profile" button linking to `/settings`.
+- `src/app/(app)/settings/page.tsx` — Settings page shell (server component, fetches profile, renders `SettingsForm`).
+- `src/app/(app)/settings/settings-form.tsx` — Client component form. Sections: avatar upload (file picker → validates image type + 5MB limit → uploads to Supabase Storage `avatars` bucket → updates `avatar_url`) and profile fields (display_name, username, bio). Shows success/error feedback inline. Calls `router.refresh()` after save to re-render server components with new data.
+- `src/app/(app)/dashboard/page.tsx` — Simplified placeholder (old sign-out header removed; nav now comes from layout).
+
+**Key decisions:**
+- Nav is a client component (needs `useRouter` for sign out) but receives profile data as a prop from the server layout — avoids redundant client-side fetch.
+- Profile and settings pages use explicit `as { data: UserRow | null }` type casts on Supabase queries, and `(supabase as any)` for the `.update()` call, because the hand-written `Database` type doesn't include the `Relationships` and `CompositeTypes` fields that `@supabase/ssr` 0.5.x expects for full type inference. This will be resolved when `npx supabase gen types` is run against the live project.
+- Avatar upload uses `upsert: true` so re-uploading overwrites the previous file at the same path (`${userId}/avatar.${ext}`). A `?t=timestamp` cache-buster is appended to the public URL so browsers fetch the new image immediately.
+- `router.refresh()` is called after a successful save to revalidate the server layout and nav (which shows the avatar).
+
+**Manual setup required before avatar upload works:**
+1. In Supabase Dashboard → Storage → Create bucket named `avatars` (set to **Public**)
+2. Run this SQL in the Supabase SQL Editor to add storage RLS policies:
+```sql
+-- Allow authenticated users to upload/update their own avatar
+create policy "Users can upload own avatar"
+  on storage.objects for insert
+  with check (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Users can update own avatar"
+  on storage.objects for update
+  using (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Allow anyone to read avatars (bucket is public, but belt-and-suspenders)
+create policy "Avatars are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+```
+
+**Known issues / debt:**
+- The `(supabase as any)` cast in `settings-form.tsx` is a workaround for the hand-written type incompatibility. Regenerate types with the Supabase CLI to fix properly.
+- Public profile pages (viewing other users' profiles) are **not** built yet — that's Phase 3 (social layer). `/profile` only shows the signed-in user's own profile.
 
 ---
 
