@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-04
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 1, Step 5 — Book Search
+**Next task:** Phase 1, Step 6 — Library Management
 
 ---
 
@@ -152,11 +152,24 @@ create policy "Avatars are publicly readable"
 
 ---
 
-### Step 5 — Book Search ⬜ Not started
+### Step 5 — Book Search ✅ Complete (2026-03-04)
 
-Depends on: Step 3 (Auth)
+**What was built:**
+- `src/types/books.ts` — `BookSearchResult` type: normalized shape shared between the search API route and client components.
+- `src/app/api/books/search/route.ts` — GET `/api/books/search?q=...`. Queries Google Books API server-side (key never exposed to client). Falls back to Open Library if Google Books returns 0 results. Caches identical queries for 60 s via `next: { revalidate: 60 }`. Returns `{ results: BookSearchResult[] }`.
+- `src/app/api/books/cache/route.ts` — POST `/api/books/cache`. Accepts a `BookSearchResult` body. Checks for existing book by `google_books_id` or `isbn_13`; inserts if new. Upserts authors by name (manual SELECT-then-INSERT to avoid duplicates, since `authors.name` has no unique DB constraint). Links via `book_authors`. Returns `{ book_id: string }`.
+- `src/app/(app)/search/page.tsx` — Client component search page. Debounced input (300 ms). Shows skeleton cards while loading, results grid (2–5 columns responsive), empty state, and error state. Clicking a card calls `/api/books/cache`, then navigates to `/books/[id]`.
+- `src/app/(app)/books/[id]/page.tsx` — Placeholder book detail page. Fetches book + authors from DB (joined via `book_authors`). Shows cover, title, subtitle, authors, year, page count, language, description. "Library actions coming soon" placeholder — will be replaced in Step 6.
+- `src/components/app-nav.tsx` — Added "Search" nav link.
 
-**Note:** Requires `GOOGLE_BOOKS_API_KEY` to be set in `.env.local` and Vercel environment variables.
+**Key decisions:**
+- The search route requires **no auth** technically (it's just querying the Google Books API), but it's protected by middleware (all `/search` URLs require a session). This is fine since we don't want anonymous searches.
+- Google Books thumbnail URLs are `http://` — these are upgraded to `https://` before returning. Next.js Image will reject `http://` URLs.
+- The cache route uses `(supabase as any)` for all DB operations — same type workaround as settings, pending proper CLI-generated types.
+- `maybeSingle()` is used for duplicate checks instead of `single()` to avoid a 406 error when no row is found.
+- `onConflict().ignoreDuplicates()` on `book_authors` insert handles the race condition where two parallel caches of the same book could both try to insert the same `book_authors` row.
+
+**Note:** Requires `GOOGLE_BOOKS_API_KEY` in `.env.local` and Vercel. Without it, requests still work (Google Books allows ~1000 unauthenticated queries/day) but will be rate-limited sooner.
 
 ---
 
