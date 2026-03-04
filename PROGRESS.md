@@ -8,8 +8,8 @@ This file is the single source of truth for what has been built, what decisions 
 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-04
-**Last worked on by:** Project setup (Cowork/Claude)
-**Next task:** Phase 1, Step 3 — Auth (email/password + Google OAuth)
+**Last worked on by:** Claude (Sonnet 4.6)
+**Next task:** Phase 1, Step 4 — User Profiles
 
 ---
 
@@ -82,20 +82,30 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
-### Step 3 — Auth ⬜ Not started
+### Step 3 — Auth ✅ Complete (2026-03-04)
 
-**What needs to be built:**
-- Sign-in page (`/login`) — email/password + Google OAuth button
-- Sign-up page (`/signup`) — email/password form, username field (stored in `raw_user_meta_data` so the `handle_new_user` trigger picks it up)
-- Auth callback route (`/auth/callback`) — handles OAuth redirect and PKCE code exchange
-- Middleware (`middleware.ts` at project root) — redirects unauthenticated users away from protected routes, redirects authenticated users away from auth pages
-- Protected route group: `src/app/(app)/` — all main app pages live here
-- Auth route group: `src/app/(auth)/` — login and signup pages live here
+**What was built:**
+- `middleware.ts` (project root) — Supabase SSR middleware that:
+  - Refreshes the session on every request (required for SSR auth)
+  - Redirects authenticated users away from `/login` and `/signup` → `/dashboard`
+  - Redirects unauthenticated users away from protected paths (`/dashboard`, `/library`, `/profile`, `/search`, `/import`, `/lists`, `/settings`) → `/login?next=<path>`
+- `src/app/auth/callback/route.ts` — GET route handler for OAuth PKCE code exchange and email confirmation redirects. On success redirects to `next` param (default `/dashboard`). On failure redirects to `/login?error=auth_callback_failed`.
+- `src/app/(auth)/layout.tsx` — centered full-screen layout wrapper for auth pages
+- `src/app/(auth)/login/page.tsx` — email/password sign-in form + Google OAuth button. Reads `?error=auth_callback_failed` query param to show error banner. Preserves `?next=` redirect param through Google OAuth flow.
+- `src/app/(auth)/signup/page.tsx` — sign-up form with username, full name (optional), email, password. Client-side username validation (regex + length). After successful signup, shows "check your email" confirmation screen. Google OAuth button also present.
+- `src/app/(app)/layout.tsx` — server-side auth safety net (redirects to `/login` if no session — middleware handles this first, but this is belt-and-suspenders)
+- `src/app/(app)/dashboard/page.tsx` — placeholder dashboard. Shows signed-in email and a sign-out button (server action). Will be replaced in later steps.
 
-**Notes for next session:**
-- The `handle_new_user()` trigger expects `raw_user_meta_data` to contain `username`, `full_name`/`name`, and `avatar_url`. Make sure sign-up passes `username` in the metadata options when calling `supabase.auth.signUp()`
-- For Google OAuth, the redirect URL to register in Google Cloud Console and Supabase will be: `https://fzbqvopmlizieegapixf.supabase.co/auth/v1/callback`
-- Middleware should protect everything under `/(app)` and redirect to `/login`
+**Key decisions:**
+- Auth pages use plain Tailwind CSS with shadcn CSS variables — no shadcn component primitives needed. This avoids the shadcn CLI requirement and keeps the code readable.
+- Both login and signup share the same Google OAuth handler. For sign-up via Google, the `handle_new_user` trigger will create the `public.users` row using whatever name/avatar_url Google provides, but `username` will be null (the trigger sets it to the email prefix as fallback). Users can set their username in profile settings later.
+- The `eslint-disable @typescript-eslint/no-explicit-any` comment is used in two cookie `setAll` handlers because the `ResponseCookies.set()` and `ReadonlyRequestCookies.set()` options types don't perfectly match the `@supabase/ssr` `CookieOptions` type — using `any` is the official Supabase workaround for this mismatch.
+- Password minimum length is 8 characters, enforced client-side. Supabase enforces the same minimum server-side by default.
+
+**Known issues / debt:**
+- Google OAuth in Supabase still needs to be enabled manually in the Supabase Dashboard > Authentication > Providers (noted in Step 2 but still pending)
+- After Google OAuth sign-up, username will be null in `public.users` until the user sets it. The `handle_new_user` trigger sets it to the email prefix as a fallback — check the trigger logic if this causes issues.
+- The placeholder dashboard will be replaced in Step 4 (User Profiles) and beyond.
 
 ---
 
