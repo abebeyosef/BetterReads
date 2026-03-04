@@ -112,12 +112,13 @@ export async function POST(request: Request) {
       authorId = newAuthor.id;
     }
 
-    // Link book ↔ author (ignore conflict if already linked)
+    // Link book ↔ author — upsert with ignoreDuplicates handles the PK conflict
     await db
       .from("book_authors")
-      .insert({ book_id: bookId, author_id: authorId })
-      .onConflict("book_id, author_id")
-      .ignoreDuplicates();
+      .upsert(
+        { book_id: bookId, author_id: authorId },
+        { onConflict: "book_id,author_id", ignoreDuplicates: true }
+      );
   }
 
   return Response.json({ book_id: bookId });

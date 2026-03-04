@@ -16,8 +16,9 @@ export default function SearchPage() {
   );
   const [cachingId, setCachingId] = useState<string | null>(null);
 
-  // Debounce timer ref
+  // Debounce timer + request sequence counter to discard stale responses
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seq = useRef(0);
 
   const runSearch = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -27,15 +28,17 @@ export default function SearchPage() {
     }
 
     setStatus("loading");
+    const mine = ++seq.current;
 
     try {
-      const res = await fetch(
-        `/api/books/search?q=${encodeURIComponent(q)}`
-      );
+      const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
+      // Discard if a newer request has already fired
+      if (mine !== seq.current) return;
       setResults(data.results ?? []);
       setStatus("done");
     } catch {
+      if (mine !== seq.current) return;
       setStatus("error");
     }
   }, []);
