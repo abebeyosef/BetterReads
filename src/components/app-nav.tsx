@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { createClient } from "@/lib/supabase/client";
@@ -16,14 +16,30 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
+const NAV_LINKS = [
+  { href: "/feed", label: "Feed" },
+  { href: "/library", label: "Library" },
+  { href: "/lists", label: "Lists" },
+  { href: "/search", label: "Search" },
+];
+
 export function AppNav({ profile }: { profile: UserRow }) {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  function isActive(href: string) {
+    if (href === "/search") return pathname.startsWith("/search");
+    if (href === "/library") return pathname.startsWith("/library");
+    if (href === "/feed") return pathname === "/feed";
+    if (href === "/lists") return pathname.startsWith("/lists");
+    return pathname === href;
   }
 
   return (
@@ -34,16 +50,20 @@ export function AppNav({ profile }: { profile: UserRow }) {
           <Link href="/dashboard" className="text-lg font-bold tracking-tight">
             Shelf
           </Link>
-          <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Link href="/feed" className="hover:text-foreground transition-colors">
-              Feed
-            </Link>
-            <Link href="/library" className="hover:text-foreground transition-colors">
-              Library
-            </Link>
-            <Link href="/search" className="hover:text-foreground transition-colors">
-              Search
-            </Link>
+          <nav className="flex items-center gap-4 text-sm">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`transition-colors ${
+                  isActive(href)
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
           </nav>
         </div>
 

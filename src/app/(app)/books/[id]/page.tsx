@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LibraryActions } from "./library-actions";
 import { ReviewForm } from "./review-form";
+import { AddToListButton } from "./add-to-list";
 import type { UserBookRow } from "@/types/database";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -136,6 +137,7 @@ export default async function BookDetailPage({ params }: PageProps) {
           )}
 
           <LibraryActions bookId={id} initialUserBook={userBook} />
+          {user && <AddToListButton bookId={id} />}
         </div>
       </div>
 
