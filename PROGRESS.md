@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 1, Step 8 — Book Detail Page
+**Next task:** Phase 2, Step 1 — Analytics Dashboard
 
 ---
 
@@ -17,8 +17,8 @@ This file is the single source of truth for what has been built, what decisions 
 
 | Phase | Name | Status |
 |-------|------|--------|
-| Phase 1 | Core Loop + Import | 🟡 In progress |
-| Phase 2 | Social Layer | ⬜ Not started |
+| Phase 1 | Core Loop + Import | ✅ Complete |
+| Phase 2 | Social Layer | 🟡 In progress |
 | Phase 3 | Discovery + Analytics | ⬜ Not started |
 | Phase 4 | Polish + Scale | ⬜ Not started |
 
@@ -221,15 +221,26 @@ create policy "Avatars are publicly readable"
 
 ---
 
-### Step 8 — Book Detail Page ⬜ Not started
+### Steps 8 + 9 — Book Detail Page & Reviews ✅ Complete (2026-03-05)
 
-Depends on: Steps 3, 5
+Built together as they are tightly coupled. Depends on: Steps 3, 5, 6.
 
----
+**What was built:**
+- `src/app/(app)/books/[id]/page.tsx` — Updated with: average platform rating (computed from all user ratings), community reviews section with user avatars/names/dates, "Your review" section (shows form or saved review), back link changed from `/search` to `/library`.
+- `src/app/(app)/books/[id]/review-form.tsx` — Client component for writing/editing reviews. States: write mode (textarea + submit), saved mode (review text + Edit/Delete buttons), locked mode (not in library → prompt to add book first). POST to `/api/reviews` on submit, DELETE on remove. Calls `router.refresh()` after mutations.
+- `src/app/api/reviews/route.ts` — POST: upserts review (one per user per book) using `onConflict: "user_id,book_id"`. Looks up `user_book_id` to populate the FK (nullable). Returns `{ review }`. DELETE: removes by `user_id` + `book_id`. Returns `{ ok: true }`.
 
-### Step 9 — Reviews ⬜ Not started
+**Key decisions:**
+- Average rating is computed server-side by fetching all non-null ratings for the book and averaging in JS. Supabase JS doesn't support aggregate functions directly in select; this approach is simple and correct for early scale.
+- Reviews require the book to be in the user's library (`hasInLibrary` prop). This matches the build plan ("Write a text review for any book in the user's library") and ensures ratings and reviews are tied to meaningful reading activity.
+- Community reviews show all reviews including the current user's own — the "Your review" section above is the editing surface, the community list is the read-only view.
+- Used a plain `<img>` tag (not Next.js `<Image>`) for review avatar thumbnails to avoid needing to whitelist every possible Supabase project URL in `next.config.ts`. The avatar URLs are already trusted (user-uploaded to our own Supabase Storage bucket).
+- Back link changed from `/search` to `/library` — more useful since users typically arrive from their library.
 
-Depends on: Steps 3, 8
+**Known issues / debt:**
+- Average rating is computed with a full table scan on `user_books` filtered by `book_id`. This is fine at low scale but could be optimised with a materialised view or cached column if the platform grows.
+- No pagination on community reviews — all reviews for a book are fetched and rendered. Fine for now given the expected user count.
+- The `<img>` tag for avatars in reviews bypasses Next.js image optimisation. Acceptable for small avatar thumbnails.
 
 ---
 
