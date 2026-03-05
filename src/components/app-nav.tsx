@@ -87,6 +87,14 @@ export function AppNav({ profile }: { profile: UserRow }) {
                   Settings
                 </Link>
               </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/import"
+                  className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
+                >
+                  Import from Goodreads
+                </Link>
+              </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 h-px bg-border" />
               <DropdownMenu.Item
                 onSelect={handleSignOut}

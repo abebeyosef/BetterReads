@@ -7,9 +7,9 @@ This file is the single source of truth for what has been built, what decisions 
 ## Current Status
 
 **Active phase:** Phase 1 — Core Loop + Import
-**Last updated:** 2026-03-04
+**Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 1, Step 7 — Goodreads Import
+**Next task:** Phase 1, Step 8 — Book Detail Page
 
 ---
 
@@ -196,9 +196,28 @@ create policy "Avatars are publicly readable"
 
 ---
 
-### Step 7 — Goodreads Import ⬜ Not started
+### Step 7 — Goodreads Import ✅ Complete (2026-03-05)
 
-Depends on: Steps 3, 5, 6
+**What was built:**
+- `src/app/(app)/import/page.tsx` — Full client-side import UI. Two-step flow: (1) instructions card with direct link to Goodreads export page, (2) drag-and-drop/click CSV file zone. Parses CSV instantly with papaparse and shows a preview ("Found X books — Y read, Z to-read, W currently reading"). Sends rows to the API in batches of 25 and shows a live progress bar. On completion, redirects to `/library`.
+- `src/app/api/import/route.ts` — POST: creates an `imports` record and returns `import_id`. Sets initial status to `processing`.
+- `src/app/api/import/[id]/route.ts` — POST: processes a batch of rows (5 concurrent per batch). For each row: (1) check local DB by isbn_13, (2) search Google Books by ISBN, (3) search Google Books by title+author, (4) create minimal book from CSV data if all else fails. Upserts `user_books` with status/rating/dates and inserts an `import_rows` record. PATCH: finalises the import record with matched/unmatched counts and `completed_at`.
+- `src/components/app-nav.tsx` — Added "Import" link in the user dropdown menu.
+
+**Key decisions:**
+- CSV parsing is done entirely client-side (papaparse) so the preview is instant — no server round-trip needed for the parse step.
+- Goodreads ISBN format includes `="..."` wrapper — stripped before matching.
+- Matching priority: local DB by isbn_13 → Google Books by ISBN → Google Books by title+author → minimal book record from CSV data. This "never block" strategy means all books are imported; unmatched ones just have less metadata.
+- Rows processed 5 at a time concurrently within each batch to balance speed vs. API rate limits.
+- `user_books` upsert uses `onConflict: "user_id,book_id"` — re-importing updates existing records (status, rating, dates) rather than duplicating them.
+- Unmatched books are still added to `user_books` with whatever CSV data exists; they appear in the library and can be manually searched/re-linked later.
+- Batching to `/api/import/[id]` keeps each API request under Vercel's serverless timeout limit (10–30s depending on plan).
+
+**Known issues / debt:**
+- No "review unmatched books" UI yet — the build plan mentions a small "X unmatched books" link in the library, but this is not built. For now, unmatched books just appear in the library with their CSV title/author.
+- Re-importing does not merge reviews or notes from Goodreads (the CSV `My Review` field is parsed but not used — reviews must be re-written natively).
+- Google Books API quota: heavy importers (500+ books, all new) use ~500 API calls. Free tier allows 1000/day. If multiple users import simultaneously, quota could be hit. Add a `GOOGLE_BOOKS_API_KEY` with higher quota if needed.
+- Import progress redirects to `/library` on completion. Once the analytics dashboard is built (Phase 2), redirect should go there instead for the "wow moment" described in the spec.
 
 ---
 
@@ -223,7 +242,7 @@ Depends on: Steps 3, 8
 | GitHub repo | `abebeyosef/BetterReads` |
 | Vercel project | `better-reads` |
 | Vercel env vars set | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| Google Books API key | ⬜ Not yet added |
+| Google Books API key | ✅ Added (local + Vercel) — validated working |
 | Google OAuth in Supabase | ⬜ Not yet enabled |
 
 ---
