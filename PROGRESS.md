@@ -294,6 +294,21 @@ Built together as they are tightly coupled. Depends on: Steps 3, 5, 6.
 
 ---
 
+## Future Development Notes
+
+### Search — needs a proper research pass before further work
+The current search implementation (Google Books + Open Library, parallel, relevance+popularity blended ranking) is functional but not yet great. Before investing more time in search ranking, do a proper research pass on how best-in-class book/content search works. Specifically investigate:
+- **Fuzzy matching** — handling typos, alternate spellings, accented characters (e.g. "Panza de burro" vs "Dogs of Summer")
+- **Tokenisation and stemming** — matching "running" to "run", ignoring stop words ("the", "of", "a")
+- **Field-weighted scoring** — title match should outweigh description match; exact author match should boost score
+- **Typesense or Algolia** — dedicated search engines that handle all of the above out of the box. Consider indexing the local `books` table in one of these once the book catalogue grows. Typesense has a generous free tier and is self-hostable.
+- **Google Books `intitle:` / `inauthor:` query operators** — using structured query syntax may improve relevance from the API itself before we even re-rank
+- **User intent signals** — if the query looks like an ISBN, skip full-text search entirely and go straight to ISBN lookup
+
+This is a deliberate future task, not something to patch incrementally. Research first, then implement properly.
+
+---
+
 ## Ongoing Notes & Decisions
 
 - **Next.js version must stay at 15.2.6 or higher** — do not use any earlier 15.x version due to CVE-2025-66478
