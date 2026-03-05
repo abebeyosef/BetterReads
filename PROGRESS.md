@@ -25,6 +25,22 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
+## Book Enrichment (Hotfix) ✅ Complete (2026-03-05)
+
+**Context:** Many books imported via Goodreads CSV had `null cover_url` and `null description` because the import's title+author Google Books lookup failed to match them.
+
+**What was built:**
+- `src/app/api/books/enrich/route.ts` — Auth-protected `POST` route. Finds all books in the user's library with `cover_url IS NULL`, queries Google Books using `intitle:{title}+inauthor:{author}` for each one, and updates `cover_url`, `description`, `genres`, `page_count`, and `google_books_id` on the `books` table. Processes in batches of 5 with a 200ms delay between batches to stay within Google Books rate limits.
+- `src/app/(app)/library/enrich-button.tsx` — Client component. Renders an amber dismissible banner on the library page showing how many books are missing covers. "Fix covers" button triggers the enrich API, shows a spinner while running, then shows the result count and calls `router.refresh()` to update the page.
+- `src/app/(app)/library/page.tsx` — Now queries `books` for `cover_url IS NULL` on the user's library book IDs, passes the count to `EnrichBooksButton`. Banner only visible when `nullCoverCount > 0`.
+
+**Key decisions:**
+- Only updates fields that have non-null values from Google Books — won't overwrite existing data with nulls.
+- Banner is dismissible even if there are uncovered books — user may not care.
+- Batch size of 5 with 200ms delay is conservative; Google Books API allows ~1000 req/day on the free tier.
+
+---
+
 ## Phase 2 — Analytics + Recommendations + Goal
 
 ### Step 1 — Analytics Dashboard ✅ Complete (2026-03-05)
