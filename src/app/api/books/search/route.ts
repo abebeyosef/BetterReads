@@ -135,11 +135,12 @@ function mergeResults(
   return [...google, ...extras];
 }
 
-// ── Relevance re-ranking ──────────────────────────────────────────────────────
-// Google Books ranks by popularity, not title match. Re-rank so that books
-// whose titles closely match the query appear first.
+// ── Relevance + popularity ranking ───────────────────────────────────────────
+// Scoring: relevance (0–100) dominates, popularity (0–20) is the tiebreaker.
+// The merged array preserves Google's original order, which is popularity-based,
+// so the position index is a reliable popularity proxy.
 
-function scoreResult(result: BookSearchResult, query: string): number {
+function relevanceScore(result: BookSearchResult, query: string): number {
   const q = query.toLowerCase().trim();
   const title = result.title.toLowerCase();
   const words = q.split(/\s+/).filter(Boolean);
@@ -148,15 +149,20 @@ function scoreResult(result: BookSearchResult, query: string): number {
   if (title.startsWith(q)) return 90;
   if (title.includes(q)) return 80;
 
-  // Count how many query words appear in the title
-  const matchedWords = words.filter((w) => title.includes(w)).length;
-  const wordScore = Math.round((matchedWords / words.length) * 60);
-
-  return wordScore;
+  const matched = words.filter((w) => title.includes(w)).length;
+  return Math.round((matched / words.length) * 60);
 }
 
 function rankResults(results: BookSearchResult[], query: string): BookSearchResult[] {
-  return [...results].sort((a, b) => scoreResult(b, query) - scoreResult(a, query));
+  const total = results.length;
+  return [...results]
+    .map((r, i) => {
+      // Popularity: earlier in Google's results = higher score (max 20)
+      const popularity = Math.round(((total - i) / total) * 20);
+      return { r, score: relevanceScore(r, query) + popularity };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ r }) => r);
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
