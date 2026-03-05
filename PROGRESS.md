@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 1 — Core Loop + Import
+**Active phase:** Phase 3 — Social Layer
 **Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 3 — Social Layer
+**Next task:** Phase 3 Steps 5–6 — Book Lists + UI Polish
 
 ---
 
@@ -19,9 +19,36 @@ This file is the single source of truth for what has been built, what decisions 
 |-------|------|--------|
 | Phase 1 | Core Loop + Import | ✅ Complete |
 | Phase 2 | Analytics + Recommendations + Goal | ✅ Complete |
-| Phase 3 | Social Layer | ⬜ Not started |
-| Phase 3 | Discovery + Analytics | ⬜ Not started |
+| Phase 3 | Social Layer | 🔄 In progress |
 | Phase 4 | Polish + Scale | ⬜ Not started |
+
+---
+
+## Phase 3 — Social Layer 🔄 In progress
+
+### Steps 1–4 — Activity Events, Feed, Public Profiles, Follow System ✅ Complete (2026-03-05)
+
+**What was built:**
+
+- **`src/lib/activity.ts`** — `createActivityEvent(db, {...})` helper. Best-effort (never throws) — activity events must not break main user flows.
+- **`/api/library` (POST updated)** — Checks existing `user_book` status before upsert. Fires `started_reading` when status transitions to `currently_reading`, `finished_reading` when transitions to `read`. Denormalized metadata includes `book_title`, `book_cover_url`, and `rating` (for finished). Does **not** fire on `want_to_read` to avoid noise.
+- **`/api/reviews` (POST updated)** — Checks for existing review before upsert. Fires `reviewed` only on new reviews (not edits). Metadata includes `book_title`, `book_cover_url`, `review_text` (truncated to 200 chars).
+- **`/api/follow`** — `POST` to follow, `DELETE ?following_id=` to unfollow. Uses upsert with `ignoreDuplicates` to handle double-clicks. RLS enforces own-only writes.
+- **`/feed`** — Server component, platform-wide activity feed, last 50 events. Each card: actor avatar (linked to `/users/[username]`), action text, book title (linked to `/books/[id]`), rating stars (for `finished_reading`), review excerpt (for `reviewed`), book cover thumbnail, relative timestamp. Empty state links to Search.
+- **`/users/[username]`** — Public profile page. Parallel fetches: stats, follower count, following count, isFollowing check, last 6 reads (cover grid), last 3 reviews. Own profile shows "Edit profile"; others show `FollowButton`. `FollowButton` is a client component with optimistic toggle state.
+- **`/profile`** — Now redirects to `/users/[username]` (own profile).
+- **`app-nav.tsx`** — Added "Feed" nav link.
+
+**Key decisions:**
+- Activity events fire only on `currently_reading` and `read` transitions (not `want_to_read`) to keep the feed signal-to-noise ratio high.
+- Import-time `user_books` upserts (in `/api/import/[id]`) do **not** generate activity events — historical imports would flood the feed with hundreds of events. Events are for real-time interactions only.
+- Metadata is denormalized (book title, cover URL) at write time per the architecture plan, so the feed never needs a `books` join.
+- Follow counts use `{ count: "exact", head: true }` — no row data fetched, just the count, to keep the profile query fast.
+- Public profile fetches 6 data sources in one `Promise.all` to minimise server response time.
+
+**Remaining in Phase 3:**
+- Step 5: Book lists (create, edit, share)
+- Step 6: UI polish pass (responsive, loading states, empty states)
 
 ---
 
