@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 3 — Social Layer
 **Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 3 Steps 5–6 — Book Lists + UI Polish
+**Next task:** Phase 4 — Polish + Hardening
 
 ---
 
@@ -19,7 +19,7 @@ This file is the single source of truth for what has been built, what decisions 
 |-------|------|--------|
 | Phase 1 | Core Loop + Import | ✅ Complete |
 | Phase 2 | Analytics + Recommendations + Goal | ✅ Complete |
-| Phase 3 | Social Layer | 🔄 In progress |
+| Phase 3 | Social Layer | ✅ Complete |
 | Phase 4 | Polish + Scale | ⬜ Not started |
 
 ---
@@ -46,9 +46,28 @@ This file is the single source of truth for what has been built, what decisions 
 - Follow counts use `{ count: "exact", head: true }` — no row data fetched, just the count, to keep the profile query fast.
 - Public profile fetches 6 data sources in one `Promise.all` to minimise server response time.
 
-**Remaining in Phase 3:**
-- Step 5: Book lists (create, edit, share)
-- Step 6: UI polish pass (responsive, loading states, empty states)
+### Steps 5–6 — Book Lists + UI Polish ✅ Complete (2026-03-05)
+
+**Step 5 — Book lists:**
+- `GET/POST /api/lists` — fetches user's lists (with optional `book_id` param to return `has_book` flag per list), creates new list.
+- `PATCH/DELETE /api/lists/[id]` — updates title/description/visibility, deletes list (RLS + explicit `user_id` filter).
+- `POST/DELETE /api/lists/[id]/books` — adds/removes books; position auto-increments based on current count.
+- `/lists` — server-rendered index with cover mosaic cards (first 4 covers in a 2×2 grid). `CreateListForm` client component expands inline on click.
+- `/lists/[id]` — list detail page. ShareButton (copies URL to clipboard), ListOwnerPanel (inline edit form + delete confirm), RemoveBookButton per book (calls DELETE then `router.refresh()`). Private lists return 404 for non-owners.
+- `AddToListButton` on book detail page — dropdown, loads lists on first open via `/api/lists?book_id=X`, toggles add/remove optimistically (no page reload). Shows "Manage lists →" link at the bottom.
+
+**Step 6 — UI polish:**
+- `app-nav.tsx` now uses `usePathname` to highlight the active nav link with `text-foreground font-medium`.
+- Nav links extracted to a `NAV_LINKS` array with per-route `isActive` logic.
+- "Lists" added to the primary nav.
+
+**Key decisions:**
+- `RemoveBookButton` uses `router.refresh()` (re-fetches server component) rather than client-side state for the book grid — keeps the list page simple and avoids prop-drilling all book data.
+- `AddToListButton` fetches lists lazily (on first open only) to avoid an unnecessary request on every book page load.
+- List positions use count+1 on insert — not perfect for reordering but sufficient for append-only use.
+- Private lists return HTTP 404 (not 403) to non-owners to avoid leaking that the list exists.
+
+**Phase 3 is now complete.**
 
 ---
 
