@@ -25,6 +25,16 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
+## Bug Fix — Enrich route query encoding (2026-03-05) ✅ Complete
+
+**Problem:** `fetchGoogleBooksData` in `/api/books/enrich` was building the Google Books URL by manually concatenating `intitle:${encodeURIComponent(title)}+inauthor:${encodeURIComponent(author)}`. `encodeURIComponent` encodes `:` as `%3A`, which corrupts the `intitle:` and `inauthor:` field operators — any book title containing a colon (e.g. "The Everything Store: Jeff Bezos and the Age of Amazon") returned 0 results.
+
+**Fix:** Dropped the field operators entirely. Now builds a plain `"title author"` query and passes it to `URLSearchParams`, which handles all percent-encoding correctly as a single `q` parameter value. Also added `console.log` of the constructed URL (API key redacted as `***`) and the HTTP response status so failures are visible in Vercel function logs.
+
+**Files changed:** `src/app/api/books/enrich/route.ts`
+
+---
+
 ## Bug Fix Batch (2026-03-05) ✅ Complete
 
 ### Bug 1 — Enrich route timeout on Vercel
