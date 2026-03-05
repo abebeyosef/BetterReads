@@ -22,8 +22,6 @@ type GoogleBooksItem = {
 function parseGoogleBook(item: GoogleBooksItem): BookSearchResult {
   const v = item.volumeInfo;
   const ids = v.industryIdentifiers ?? [];
-
-  // Google Books returns http:// thumbnail URLs — upgrade to https://
   const rawCover = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? null;
   const cover_url = rawCover ? rawCover.replace(/^http:\/\//, "https://") : null;
 
@@ -48,20 +46,20 @@ async function searchGoogleBooks(query: string): Promise<BookSearchResult[]> {
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
   const url =
     `https://www.googleapis.com/books/v1/volumes` +
-    `?q=${encodeURIComponent(query)}&maxResults=20&printType=books` +
+    `?q=${encodeURIComponent(query)}&maxResults=40&printType=books` +
     (apiKey ? `&key=${apiKey}` : "");
 
-  const res = await fetch(url, {
-    next: { revalidate: 60 }, // Cache identical queries for 60 s
-  });
-
-  if (!res.ok) return [];
-
-  const data = await res.json();
-  return (data.items ?? []).map(parseGoogleBook);
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items ?? []).map(parseGoogleBook);
+  } catch {
+    return [];
+  }
 }
 
-// ── Open Library (fallback) ───────────────────────────────────────────────────
+// ── Open Library ──────────────────────────────────────────────────────────────
 
 type OLDoc = {
   key: string;
@@ -79,7 +77,6 @@ function parseOpenLibraryDoc(doc: OLDoc): BookSearchResult {
   const isbns = doc.isbn ?? [];
   const isbn13 = isbns.find((i) => i.length === 13) ?? null;
   const isbn10 = isbns.find((i) => i.length === 10) ?? null;
-
   const cover_url = doc.cover_i
     ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
     : null;
@@ -91,7 +88,7 @@ function parseOpenLibraryDoc(doc: OLDoc): BookSearchResult {
     subtitle: doc.subtitle ?? null,
     authors: doc.author_name ?? [],
     cover_url,
-    description: null, // OL search endpoint doesn't return description
+    description: null,
     page_count: null,
     published_date: doc.first_publish_year?.toString() ?? null,
     language: doc.language?.[0] ?? null,
@@ -104,13 +101,40 @@ function parseOpenLibraryDoc(doc: OLDoc): BookSearchResult {
 async function searchOpenLibrary(query: string): Promise<BookSearchResult[]> {
   const url =
     `https://openlibrary.org/search.json` +
-    `?q=${encodeURIComponent(query)}&limit=20&fields=key,title,subtitle,author_name,first_publish_year,language,isbn,subject,cover_i`;
+    `?q=${encodeURIComponent(query)}&limit=20` +
+    `&fields=key,title,subtitle,author_name,first_publish_year,language,isbn,subject,cover_i`;
 
-  const res = await fetch(url, { next: { revalidate: 60 } });
-  if (!res.ok) return [];
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.docs ?? []).map(parseOpenLibraryDoc);
+  } catch {
+    return [];
+  }
+}
 
-  const data = await res.json();
-  return (data.docs ?? []).map(parseOpenLibraryDoc);
+// ── Merge + deduplicate ───────────────────────────────────────────────────────
+
+function mergeResults(
+  google: BookSearchResult[],
+  openLibrary: BookSearchResult[]
+): BookSearchResult[] {
+  // Build a set of isbn_13s and titles already covered by Google Books results
+  const seenIsbn13 = new Set(google.map((b) => b.isbn_13).filter(Boolean));
+  const seenTitles = new Set(
+    google.map((b) => `${b.title.toLowerCase()}|${b.authors[0]?.toLowerCase() ?? ""}`)
+  );
+
+  // Add OL results that aren't already represented
+  const extras = openLibrary.filter((b) => {
+    if (b.isbn_13 && seenIsbn13.has(b.isbn_13)) return false;
+    const key = `${b.title.toLowerCase()}|${b.authors[0]?.toLowerCase() ?? ""}`;
+    if (seenTitles.has(key)) return false;
+    return true;
+  });
+
+  return [...google, ...extras];
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -122,13 +146,12 @@ export async function GET(request: NextRequest) {
     return Response.json({ results: [] });
   }
 
-  const results = await searchGoogleBooks(q);
+  // Run both sources in parallel — no cache so results are always fresh
+  const [googleResults, olResults] = await Promise.all([
+    searchGoogleBooks(q),
+    searchOpenLibrary(q),
+  ]);
 
-  if (results.length > 0) {
-    return Response.json({ results });
-  }
-
-  // Google Books returned nothing — try Open Library
-  const fallback = await searchOpenLibrary(q);
-  return Response.json({ results: fallback });
+  const results = mergeResults(googleResults, olResults);
+  return Response.json({ results });
 }
