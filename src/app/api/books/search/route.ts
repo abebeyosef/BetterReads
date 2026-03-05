@@ -120,13 +120,11 @@ function mergeResults(
   google: BookSearchResult[],
   openLibrary: BookSearchResult[]
 ): BookSearchResult[] {
-  // Build a set of isbn_13s and titles already covered by Google Books results
   const seenIsbn13 = new Set(google.map((b) => b.isbn_13).filter(Boolean));
   const seenTitles = new Set(
     google.map((b) => `${b.title.toLowerCase()}|${b.authors[0]?.toLowerCase() ?? ""}`)
   );
 
-  // Add OL results that aren't already represented
   const extras = openLibrary.filter((b) => {
     if (b.isbn_13 && seenIsbn13.has(b.isbn_13)) return false;
     const key = `${b.title.toLowerCase()}|${b.authors[0]?.toLowerCase() ?? ""}`;
@@ -135,6 +133,30 @@ function mergeResults(
   });
 
   return [...google, ...extras];
+}
+
+// ── Relevance re-ranking ──────────────────────────────────────────────────────
+// Google Books ranks by popularity, not title match. Re-rank so that books
+// whose titles closely match the query appear first.
+
+function scoreResult(result: BookSearchResult, query: string): number {
+  const q = query.toLowerCase().trim();
+  const title = result.title.toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+
+  if (title === q) return 100;
+  if (title.startsWith(q)) return 90;
+  if (title.includes(q)) return 80;
+
+  // Count how many query words appear in the title
+  const matchedWords = words.filter((w) => title.includes(w)).length;
+  const wordScore = Math.round((matchedWords / words.length) * 60);
+
+  return wordScore;
+}
+
+function rankResults(results: BookSearchResult[], query: string): BookSearchResult[] {
+  return [...results].sort((a, b) => scoreResult(b, query) - scoreResult(a, query));
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -152,6 +174,7 @@ export async function GET(request: NextRequest) {
     searchOpenLibrary(q),
   ]);
 
-  const results = mergeResults(googleResults, olResults);
+  const merged = mergeResults(googleResults, olResults);
+  const results = rankResults(merged, q);
   return Response.json({ results });
 }
