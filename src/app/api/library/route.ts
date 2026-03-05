@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createActivityEvent } from "@/lib/activity";
 import type { ReadingStatus } from "@/types/database";
 
 /**
@@ -36,6 +37,14 @@ export async function POST(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
+  // Snapshot existing status before upsert to detect meaningful transitions
+  const { data: existing } = await db
+    .from("user_books")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("book_id", book_id)
+    .maybeSingle() as { data: { status: ReadingStatus } | null };
+
   const { data, error } = await db
     .from("user_books")
     .upsert(
@@ -53,6 +62,27 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // Fire activity event on meaningful status transitions only
+  const statusChanged = existing?.status !== status;
+  if (statusChanged && (status === "currently_reading" || status === "read")) {
+    const { data: book } = await db
+      .from("books")
+      .select("title, cover_url")
+      .eq("id", book_id)
+      .maybeSingle() as { data: { title: string; cover_url: string | null } | null };
+
+    await createActivityEvent(db, {
+      userId: user.id,
+      eventType: status === "currently_reading" ? "started_reading" : "finished_reading",
+      bookId: book_id,
+      metadata: {
+        book_title: book?.title ?? null,
+        book_cover_url: book?.cover_url ?? null,
+        ...(status === "read" ? { rating: rating ?? null } : {}),
+      },
+    });
+  }
 
   return Response.json({ user_book: data });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createActivityEvent } from "@/lib/activity";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -13,6 +14,14 @@ export async function POST(request: Request) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+
+  // Check if this is a new review (not an edit) before upserting
+  const { data: existingReview } = await db
+    .from("reviews")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("book_id", book_id)
+    .maybeSingle() as { data: { id: string } | null };
 
   // Get user_book_id if it exists (nullable FK)
   const { data: userBook } = await db
@@ -37,6 +46,27 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Only fire the activity event for new reviews, not edits
+  if (!existingReview) {
+    const { data: book } = await db
+      .from("books")
+      .select("title, cover_url")
+      .eq("id", book_id)
+      .maybeSingle() as { data: { title: string; cover_url: string | null } | null };
+
+    await createActivityEvent(db, {
+      userId: user.id,
+      eventType: "reviewed",
+      bookId: book_id,
+      metadata: {
+        book_title: book?.title ?? null,
+        book_cover_url: book?.cover_url ?? null,
+        review_text: text.trim().slice(0, 200),
+      },
+    });
+  }
+
   return NextResponse.json({ review: data });
 }
 
