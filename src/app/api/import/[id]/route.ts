@@ -214,8 +214,8 @@ async function processRow(supabase: any, userId: string, importId: string, row: 
       book_id: bookId,
       status: row.status,
       rating: row.rating,
-      date_started: null,
-      date_finished: row.dateRead,
+      date_started: row.dateRead ? (row.dateAdded ?? null) : null,
+      date_finished: row.dateRead ?? row.dateAdded,
     },
     { onConflict: "user_id,book_id" }
   );
