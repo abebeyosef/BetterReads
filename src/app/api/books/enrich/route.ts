@@ -23,21 +23,29 @@ async function fetchGoogleBooksData(
   genres: string[] | null;
 } | null> {
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-  const q = author
-    ? `intitle:${encodeURIComponent(title)}+inauthor:${encodeURIComponent(author)}`
-    : `intitle:${encodeURIComponent(title)}`;
 
-  const url =
-    `https://www.googleapis.com/books/v1/volumes` +
-    `?q=${q}&maxResults=1&printType=books` +
-    (apiKey ? `&key=${apiKey}` : "");
+  // Plain "title author" query — no intitle:/inauthor: operators.
+  // Operators require the colon to be unencoded, but encodeURIComponent encodes
+  // colons as %3A, which breaks queries for titles like "The Everything Store: Jeff Bezos…".
+  // URLSearchParams handles all encoding correctly as a single q value.
+  const q = [title, author].filter(Boolean).join(" ");
+  const params = new URLSearchParams({ q, maxResults: "1", printType: "books" });
+  if (apiKey) params.set("key", apiKey);
+  const url = `https://www.googleapis.com/books/v1/volumes?${params}`;
+
+  // Log the URL with the API key redacted so we can debug in Vercel logs
+  console.log(`[enrich] GET ${url.replace(apiKey ?? "NOKEY", "***")}`);
 
   try {
     const res = await fetch(url, { cache: "no-store" });
+    console.log(`[enrich] status=${res.status} title="${title}"`);
     if (!res.ok) return null;
     const data = await res.json();
     const item: GoogleBooksItem | undefined = data.items?.[0];
-    if (!item) return null;
+    if (!item) {
+      console.log(`[enrich] no results for "${title}"`);
+      return null;
+    }
 
     const v = item.volumeInfo;
     const rawCover = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? null;
@@ -50,7 +58,8 @@ async function fetchGoogleBooksData(
       page_count: v.pageCount ?? null,
       genres: v.categories ?? null,
     };
-  } catch {
+  } catch (err) {
+    console.error(`[enrich] fetch error for "${title}":`, err);
     return null;
   }
 }
