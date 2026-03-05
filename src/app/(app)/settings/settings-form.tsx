@@ -45,6 +45,9 @@ export function SettingsForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const [clearStep, setClearStep] = useState<"idle" | "confirm" | "clearing" | "cleared">("idle");
+  const [clearError, setClearError] = useState<string | null>(null);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -140,6 +143,25 @@ export function SettingsForm({
     setSaving(false);
     setAvatarFile(null);
     router.refresh();
+  }
+
+  async function handleClearLibrary() {
+    setClearStep("clearing");
+    setClearError(null);
+    try {
+      const res = await fetch("/api/library/clear", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "clear-library" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Unknown error");
+      setClearStep("cleared");
+      router.refresh();
+    } catch (e) {
+      setClearError(e instanceof Error ? e.message : "Something went wrong.");
+      setClearStep("confirm");
+    }
   }
 
   return (
@@ -303,6 +325,68 @@ export function SettingsForm({
       >
         {saving ? "Saving…" : "Save changes"}
       </button>
+
+      {/* Danger zone */}
+      <section className="space-y-3 border-t border-border pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-destructive">
+          Danger zone
+        </h2>
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium">Clear library</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Permanently removes all books from your library. The books themselves are not deleted, only your reading history and statuses. Use this to re-import cleanly.
+            </p>
+          </div>
+
+          {clearStep === "idle" && (
+            <button
+              type="button"
+              onClick={() => setClearStep("confirm")}
+              className="rounded-md border border-destructive/50 px-3 py-1.5 text-sm text-destructive font-medium hover:bg-destructive/10 transition-colors"
+            >
+              Clear library…
+            </button>
+          )}
+
+          {clearStep === "confirm" && (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive font-medium">
+                Are you sure? This cannot be undone.
+              </p>
+              {clearError && (
+                <p className="text-xs text-destructive">{clearError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearLibrary}
+                  className="rounded-md bg-destructive px-3 py-1.5 text-sm text-white font-medium hover:opacity-90 transition-opacity"
+                >
+                  Yes, clear everything
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setClearStep("idle"); setClearError(null); }}
+                  className="rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {clearStep === "clearing" && (
+            <p className="text-sm text-muted-foreground">Clearing library&hellip;</p>
+          )}
+
+          {clearStep === "cleared" && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Library cleared. You can now re-import.
+            </p>
+          )}
+        </div>
+      </section>
     </form>
   );
 }

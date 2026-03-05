@@ -125,6 +125,36 @@ async function createMinimalBook(supabase: any, row: ParsedRow): Promise<string 
     if (data) return data.id;
   }
 
+  // Check by title + author to prevent duplicates on re-import (no ISBN available)
+  if (row.title && row.author) {
+    const { data: byTitle } = await supabase
+      .from("books")
+      .select("id, book_authors ( authors ( name ) )")
+      .ilike("title", row.title.trim())
+      .limit(10) as {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { id: string; book_authors: { authors: { name: string } | null }[] }[] | null;
+    };
+
+    if (byTitle && byTitle.length > 0) {
+      const authorNorm = row.author.toLowerCase().trim();
+      const match = byTitle.find((b) =>
+        b.book_authors?.some(
+          (ba) => ba.authors?.name?.toLowerCase()?.trim() === authorNorm
+        )
+      );
+      if (match) return match.id;
+    }
+  } else if (row.title && !row.author) {
+    // No author — match on title alone to avoid obvious duplicates
+    const { data } = await supabase
+      .from("books")
+      .select("id")
+      .ilike("title", row.title.trim())
+      .maybeSingle();
+    if (data) return data.id;
+  }
+
   const { data, error } = await supabase
     .from("books")
     .insert({ title: row.title, isbn_13: row.isbn13, isbn_10: row.isbn10 })

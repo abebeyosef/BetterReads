@@ -56,7 +56,6 @@ async function fetchGoogleBooksData(
 }
 
 export async function POST(request: NextRequest) {
-  void request;
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,6 +63,12 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // How many books to process in this call (default 15 to stay well within timeout)
+  const limit = Math.min(
+    parseInt(request.nextUrl.searchParams.get("limit") ?? "15"),
+    50
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -75,13 +80,13 @@ export async function POST(request: NextRequest) {
     .eq("user_id", user.id) as { data: { book_id: string }[] | null };
 
   if (!userBooks || userBooks.length === 0) {
-    return Response.json({ enriched: 0, skipped: 0, total: 0 });
+    return Response.json({ enriched: 0, skipped: 0, total: 0, remaining: 0 });
   }
 
   const bookIds = userBooks.map((r) => r.book_id);
 
   // Fetch books with null cover_url
-  const { data: booksToEnrich } = await db
+  const { data: allBooksToEnrich } = await db
     .from("books")
     .select(`
       id, title,
@@ -96,24 +101,25 @@ export async function POST(request: NextRequest) {
     }[] | null;
   };
 
-  if (!booksToEnrich || booksToEnrich.length === 0) {
-    return Response.json({ enriched: 0, skipped: 0, total: 0 });
+  if (!allBooksToEnrich || allBooksToEnrich.length === 0) {
+    return Response.json({ enriched: 0, skipped: 0, total: 0, remaining: 0 });
   }
 
-  const total = booksToEnrich.length;
+  // Only process up to `limit` books; return how many are left for the next call
+  const booksToEnrich = allBooksToEnrich.slice(0, limit);
+  const remaining = allBooksToEnrich.length - booksToEnrich.length;
+
   let enriched = 0;
   let skipped = 0;
 
-  // Process in batches of 5
-  const BATCH = 5;
+  // Process in batches of 3 with a 500ms delay between batches
+  const BATCH = 3;
   for (let i = 0; i < booksToEnrich.length; i += BATCH) {
     const batch = booksToEnrich.slice(i, i + BATCH);
 
     await Promise.all(
       batch.map(async (book) => {
-        const author =
-          book.book_authors?.[0]?.authors?.name ?? null;
-
+        const author = book.book_authors?.[0]?.authors?.name ?? null;
         const result = await fetchGoogleBooksData(book.title, author);
 
         if (!result || (!result.cover_url && !result.description && !result.genres && !result.page_count)) {
@@ -121,7 +127,7 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        // Only update fields that have values (don't overwrite with nulls)
+        // Only update fields that have values — don't overwrite with nulls
         const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (result.cover_url) updates.cover_url = result.cover_url;
         if (result.description) updates.description = result.description;
@@ -129,10 +135,7 @@ export async function POST(request: NextRequest) {
         if (result.page_count) updates.page_count = result.page_count;
         if (result.google_books_id) updates.google_books_id = result.google_books_id;
 
-        const { error } = await db
-          .from("books")
-          .update(updates)
-          .eq("id", book.id);
+        const { error } = await db.from("books").update(updates).eq("id", book.id);
 
         if (error) {
           skipped++;
@@ -142,11 +145,11 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Small delay between batches to avoid rate limits
+    // 500ms delay between batches to avoid hitting rate limits
     if (i + BATCH < booksToEnrich.length) {
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
-  return Response.json({ enriched, skipped, total });
+  return Response.json({ enriched, skipped, total: booksToEnrich.length, remaining });
 }
