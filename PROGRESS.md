@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 2, Step 1 — Analytics Dashboard
+**Next task:** Phase 2, Steps 2–5 — Recency Gap, Reading Goal, Recommendations, Home Dashboard
 
 ---
 
@@ -18,9 +18,45 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase | Name | Status |
 |-------|------|--------|
 | Phase 1 | Core Loop + Import | ✅ Complete |
-| Phase 2 | Social Layer | 🟡 In progress |
+| Phase 2 | Analytics + Recommendations + Goal | 🟡 In progress |
 | Phase 3 | Discovery + Analytics | ⬜ Not started |
 | Phase 4 | Polish + Scale | ⬜ Not started |
+
+---
+
+## Phase 2 — Analytics + Recommendations + Goal
+
+### Step 1 — Analytics Dashboard ✅ Complete (2026-03-05)
+
+**What was built:**
+- `src/app/(app)/dashboard/page.tsx` — Full server-rendered analytics dashboard replacing the placeholder. Fetches: all read books (rating, dates, genres, page_count), status counts, currently reading entries with covers. Computes all analytics server-side and passes serialisable data to chart components.
+- `src/app/(app)/dashboard/analytics-charts.tsx` — Client component (Recharts). Four chart components: `BooksPerYearChart` (bar), `BooksPerMonthChart` (bar, all 12 months of current year, greyed-out bars for empty months), `GenreChart` (horizontal bar, top 8), `RatingChart` (bar, ★ to ★★★★★).
+
+**Dashboard layout:**
+- Stats row: Books read / Currently reading / Want to read / Average rating
+- Currently reading strip (cover cards, horizontal scroll)
+- Empty state with CTAs to Search or Import (shown when no data at all)
+- Books read by year + this year by month (side by side)
+- Genre breakdown + Rating distribution (side by side)
+- Highlights row: read this year, best year, total pages, fastest read, longest read, top genre
+
+**Key decisions:**
+- All analytics computed server-side in JS — avoids complex SQL aggregates and is readable/maintainable. Fine at expected scale.
+- Genre uses only the first element of the `genres` array per book (Google Books categories can be very specific; the first is usually the best label).
+- Monthly chart always shows all 12 months of the current year with muted bars for zero-read months — gives a sense of pace rather than hiding empty months.
+- Fastest/longest read uses `date_finished - date_started` in days; books with 0-day difference are shown as "Same day" in the highlights.
+- Empty state shown when user has 0 read books AND 0 currently reading — links to Search and Import to drive the key actions.
+- Recharts `ResponsiveContainer` makes all charts fluid-width responsive.
+
+**Known issues / debt:**
+- Dashboard bundle is ~100kB (Recharts is large). Acceptable for now; could be code-split further.
+- Genre data depends on Google Books categories which are inconsistent (e.g. "Fiction / Science Fiction" vs "Science Fiction"). No normalisation applied yet.
+- No reading goal UI yet — coming in Phase 2 Step 3.
+- No recommendations yet — coming in Phase 2 Step 4.
+
+---
+
+### Steps 2–5 — Recency Gap, Reading Goal, Recommendations, Home Dashboard ⬜ Not started
 
 ---
 
