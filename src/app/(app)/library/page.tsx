@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadingStatus } from "@/types/database";
+import { EnrichBooksButton } from "./enrich-button";
 
 type SortOption = "recent" | "finished" | "rating" | "title";
 
@@ -78,6 +79,23 @@ export default async function LibraryPage({ searchParams }: PageProps) {
     read: counts?.filter((r) => r.status === "read").length ?? 0,
   };
 
+  // Count books in user's library missing a cover
+  let nullCoverCount = 0;
+  const { data: userBookIds } = await db
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", user.id) as { data: { book_id: string }[] | null };
+
+  if (userBookIds && userBookIds.length > 0) {
+    const ids = userBookIds.map((r) => r.book_id);
+    const { count } = await db
+      .from("books")
+      .select("id", { count: "exact", head: true })
+      .in("id", ids)
+      .is("cover_url", null) as { count: number | null };
+    nullCoverCount = count ?? 0;
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -89,6 +107,8 @@ export default async function LibraryPage({ searchParams }: PageProps) {
           + Add books
         </Link>
       </div>
+
+      <EnrichBooksButton nullCoverCount={nullCoverCount} />
 
       {/* Status tabs */}
       <div className="flex gap-1 border-b border-border">
