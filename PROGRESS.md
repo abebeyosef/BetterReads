@@ -25,6 +25,22 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
+## Bug Fix Batch (2026-03-05) ✅ Complete
+
+### Bug 1 — Enrich route timeout on Vercel
+**Problem:** `POST /api/books/enrich` processed all null-cover books in one call, timing out on large libraries (Vercel serverless limit is 10s on Hobby plan).
+**Fix:** Added `?limit=N` query param (default 15, max 50). Each call now processes at most 15 books. Batch size reduced from 5 → 3, delay between batches increased from 200ms → 500ms. Response now includes `remaining` count. `EnrichBooksButton` shows a "Continue enriching" button when `remaining > 0`, allowing the user to step through the full library in chunks.
+
+### Bug 2 — Import creates duplicate books on re-import
+**Problem:** `createMinimalBook` in `src/app/api/import/[id]/route.ts` only checked `isbn_13` before inserting. Books without ISBNs (common in Goodreads exports) were inserted as new rows on every re-import, creating duplicates.
+**Fix:** Added a title+author deduplication check using `ilike("title", ...)` + a scan of `book_authors` before any insert. Falls back to title-only check when no author is present. The `ilike` ensures case-insensitive matching (e.g. "The Great Gatsby" vs "the great gatsby").
+
+### Bug 3 — No way to clear library before re-importing
+**Problem:** Users who imported with errors had no way to start fresh without manually removing books.
+**Fix:** New `DELETE /api/library/clear` route removes all `user_books` rows for the authenticated user (guarded by a `confirm: "clear-library"` token in the body to prevent accidental calls). Added a "Danger Zone" section to `src/app/(app)/settings/settings-form.tsx` with a two-step confirmation UI (first click shows confirm/cancel, second click fires the request).
+
+---
+
 ## Book Enrichment (Hotfix) ✅ Complete (2026-03-05)
 
 **Context:** Many books imported via Goodreads CSV had `null cover_url` and `null description` because the import's title+author Google Books lookup failed to match them.
