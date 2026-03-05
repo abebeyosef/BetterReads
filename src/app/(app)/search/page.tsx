@@ -1,22 +1,23 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import type { BookSearchResult } from "@/types/books";
 
-export default function SearchPage() {
+function SearchInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") ?? "";
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQ);
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
-    "idle"
+    initialQ.length >= 2 ? "loading" : "idle"
   );
   const [cachingId, setCachingId] = useState<string | null>(null);
 
-  // Debounce timer + request sequence counter to discard stale responses
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seq = useRef(0);
 
@@ -33,7 +34,6 @@ export default function SearchPage() {
     try {
       const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
-      // Discard if a newer request has already fired
       if (mine !== seq.current) return;
       setResults(data.results ?? []);
       setStatus("done");
@@ -43,10 +43,18 @@ export default function SearchPage() {
     }
   }, []);
 
+  // Auto-run search if a ?q= param was passed (e.g. from a recommendation link)
+  useEffect(() => {
+    if (initialQ.length >= 2) {
+      runSearch(initialQ);
+    }
+    // Only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value;
     setQuery(q);
-
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => runSearch(q), 300);
   }
@@ -72,7 +80,6 @@ export default function SearchPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
-      {/* Search input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <input
@@ -85,7 +92,6 @@ export default function SearchPage() {
         />
       </div>
 
-      {/* States */}
       {status === "loading" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: 10 }).map((_, i) => (
@@ -110,12 +116,11 @@ export default function SearchPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {results.map((book) => {
             const key = book.google_books_id ?? book.isbn_13 ?? book.title;
-            const isLoading = cachingId === key;
             return (
               <BookCard
                 key={key}
                 book={book}
-                loading={isLoading}
+                loading={cachingId === key}
                 onClick={() => handleBookClick(book)}
               />
             );
@@ -132,24 +137,22 @@ export default function SearchPage() {
   );
 }
 
-function BookCard({
-  book,
-  loading,
-  onClick,
-}: {
-  book: BookSearchResult;
-  loading: boolean;
-  onClick: () => void;
-}) {
-  const year = book.published_date?.slice(0, 4);
-
+export default function SearchPage() {
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className="group text-left space-y-2 disabled:opacity-60"
-    >
-      {/* Cover */}
+    <Suspense fallback={
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <div className="h-11 w-full rounded-lg bg-muted animate-pulse" />
+      </div>
+    }>
+      <SearchInner />
+    </Suspense>
+  );
+}
+
+function BookCard({ book, loading, onClick }: { book: BookSearchResult; loading: boolean; onClick: () => void }) {
+  const year = book.published_date?.slice(0, 4);
+  return (
+    <button onClick={onClick} disabled={loading} className="group text-left space-y-2 disabled:opacity-60">
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-muted">
         {book.cover_url ? (
           <Image
@@ -161,9 +164,7 @@ function BookCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center p-3 text-center">
-            <span className="text-xs text-muted-foreground line-clamp-4">
-              {book.title}
-            </span>
+            <span className="text-xs text-muted-foreground line-clamp-4">{book.title}</span>
           </div>
         )}
         {loading && (
@@ -172,20 +173,12 @@ function BookCard({
           </div>
         )}
       </div>
-
-      {/* Metadata */}
       <div>
-        <p className="text-sm font-medium leading-tight line-clamp-2">
-          {book.title}
-        </p>
+        <p className="text-sm font-medium leading-tight line-clamp-2">{book.title}</p>
         {book.authors.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {book.authors.join(", ")}
-          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{book.authors.join(", ")}</p>
         )}
-        {year && (
-          <p className="text-xs text-muted-foreground">{year}</p>
-        )}
+        {year && <p className="text-xs text-muted-foreground">{year}</p>}
       </div>
     </button>
   );

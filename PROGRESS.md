@@ -9,7 +9,7 @@ This file is the single source of truth for what has been built, what decisions 
 **Active phase:** Phase 1 — Core Loop + Import
 **Last updated:** 2026-03-05
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 2, Steps 2–5 — Recency Gap, Reading Goal, Recommendations, Home Dashboard
+**Next task:** Phase 3 — Social Layer
 
 ---
 
@@ -18,7 +18,8 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase | Name | Status |
 |-------|------|--------|
 | Phase 1 | Core Loop + Import | ✅ Complete |
-| Phase 2 | Analytics + Recommendations + Goal | 🟡 In progress |
+| Phase 2 | Analytics + Recommendations + Goal | ✅ Complete |
+| Phase 3 | Social Layer | ⬜ Not started |
 | Phase 3 | Discovery + Analytics | ⬜ Not started |
 | Phase 4 | Polish + Scale | ⬜ Not started |
 
@@ -56,7 +57,23 @@ This file is the single source of truth for what has been built, what decisions 
 
 ---
 
-### Steps 2–5 — Recency Gap, Reading Goal, Recommendations, Home Dashboard ⬜ Not started
+### Steps 2–5 — Recency Gap, Reading Goal, Recommendations, Home Dashboard ✅ Complete (2026-03-05)
+
+**What was built:**
+- `src/app/(app)/settings/settings-form.tsx` — Added reading goal section: number input for target book count (current year auto-set). Clear button to remove goal. Saves `reading_goal_year` and `reading_goal_count` to the `users` table alongside other profile fields.
+- `src/app/(app)/dashboard/page.tsx` — Expanded with three new sections:
+  - **Reading goal progress bar**: fetches profile goal, computes `thisYearCount / goalCount`, renders a progress bar with "X books to go" or "Goal complete!" message. Shows a "Set a reading goal" nudge link if no goal is set and the user has read books.
+  - **Recency gap engine**: for each genre in the user's read history, finds the most recent finish date. Flags genres not read in 2+ months, sorted by longest gap. Shown as recommendation cards linking to `/search?q=<genre>`.
+  - **Author affinity**: finds authors the user has rated 4+ stars, computes average rating per author, shows top 3 as recommendation cards linking to `/search?q=<author>`.
+  - All four data fetches (read books, status counts, currently reading, profile) now run in parallel via `Promise.all`.
+- `src/app/(app)/search/page.tsx` — Split into `SearchInner` (uses `useSearchParams`) + `SearchPage` (Suspense wrapper). Added `useEffect` on mount to auto-run search if a `?q=` param is present — enables recommendation cards to link directly into a pre-populated search.
+
+**Key decisions:**
+- Recency gap threshold is 2+ months (not 1) to avoid noise — a gap of 1 month isn't unusual. Adjust if needed.
+- Author affinity only surfaces authors with at least 1 book rated 4+ stars. Low bar intentional — even one loved book is a valid signal.
+- Recommendation cards link to `/search?q=<genre or author>` — uses the existing search infrastructure rather than building a separate recommendations engine.
+- Reading goal is always for the current calendar year. If a user has a goal from a previous year, it's ignored (not shown on dashboard) until they update it in settings.
+- `Promise.all` for dashboard fetches reduces server response time.
 
 ---
 

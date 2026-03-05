@@ -26,6 +26,8 @@ export function SettingsForm({
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const currentYear = new Date().getFullYear();
+
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio ?? "");
@@ -33,6 +35,11 @@ export function SettingsForm({
     profile.avatar_url
   );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [readingGoal, setReadingGoal] = useState<string>(
+    profile.reading_goal_year === currentYear && profile.reading_goal_count
+      ? String(profile.reading_goal_count)
+      : ""
+  );
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +121,8 @@ export function SettingsForm({
         username: username.trim().toLowerCase(),
         bio: bio.trim() || null,
         avatar_url: avatarUrl,
+        reading_goal_year: readingGoal ? currentYear : null,
+        reading_goal_count: readingGoal ? parseInt(readingGoal) : null,
       })
       .eq("id", userId);
 
@@ -234,6 +243,44 @@ export function SettingsForm({
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             placeholder="A little about yourself…"
           />
+        </div>
+      </section>
+
+      {/* Reading goal */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Reading goal
+        </h2>
+        <div className="space-y-1">
+          <label htmlFor="readingGoal" className="text-sm font-medium">
+            Books to read in {currentYear}{" "}
+            <span className="text-muted-foreground font-normal">(optional)</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="readingGoal"
+              type="number"
+              min="1"
+              max="365"
+              value={readingGoal}
+              onChange={(e) => setReadingGoal(e.target.value)}
+              placeholder="e.g. 24"
+              className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <span className="text-sm text-muted-foreground">books</span>
+            {readingGoal && (
+              <button
+                type="button"
+                onClick={() => setReadingGoal("")}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Your progress will appear on your dashboard.
+          </p>
         </div>
       </section>
 
