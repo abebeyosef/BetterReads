@@ -3,57 +3,135 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --radius: 0.5rem;
+  /* ── Default / Driftwood ─────────────────────────────── */
+  :root,
+  [data-theme="driftwood"] {
+    --background:           30 52% 97%;
+    --foreground:           20 50% 17%;
+    --card:                 30 42% 90%;
+    --card-foreground:      20 50% 17%;
+    --popover:              30 52% 97%;
+    --popover-foreground:   20 50% 17%;
+    --primary:              30 43% 48%;
+    --primary-foreground:   0 0% 100%;
+    --secondary:            30 42% 90%;
+    --secondary-foreground: 26 53% 24%;
+    --muted:                30 53% 91%;
+    --muted-foreground:     28 26% 47%;
+    --accent:               30 53% 91%;
+    --accent-foreground:    26 53% 24%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:               33 34% 80%;
+    --input:                33 34% 80%;
+    --ring:                 30 43% 48%;
+    --radius:               0.6rem;
+
+    --illo-primary:   #b07d45;
+    --illo-secondary: #5c3d1e;
+    --illo-leaf:      #6a9450;
   }
 
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
-}
+  /* ── Sea Salt ─────────────────────────────────────────── */
+  [data-theme="seasalt"] {
+    --background:           150 14% 97%;
+    --foreground:           168 36% 15%;
+    --card:                 155 21% 91%;
+    --card-foreground:      168 36% 15%;
+    --popover:              150 14% 97%;
+    --popover-foreground:   168 36% 15%;
+    --primary:              168 30% 42%;
+    --primary-foreground:   0 0% 100%;
+    --secondary:            155 21% 91%;
+    --secondary-foreground: 163 34% 18%;
+    --muted:                160 30% 89%;
+    --muted-foreground:     165 21% 44%;
+    --accent:               160 30% 89%;
+    --accent-foreground:    163 34% 18%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:               162 19% 83%;
+    --input:                162 19% 83%;
+    --ring:                 168 30% 42%;
+    --radius:               0.6rem;
 
-@layer base {
+    --illo-primary:   #4a8a7a;
+    --illo-secondary: #1f4038;
+    --illo-leaf:      #338050;
+  }
+
+  /* ── Warm Linen ───────────────────────────────────────── */
+  [data-theme="linen"] {
+    --background:           40 33% 97%;
+    --foreground:           28 28% 13%;
+    --card:                 38 37% 91%;
+    --card-foreground:      28 28% 13%;
+    --popover:              40 33% 97%;
+    --popover-foreground:   28 28% 13%;
+    --primary:              38 19% 40%;
+    --primary-foreground:   0 0% 100%;
+    --secondary:            38 37% 91%;
+    --secondary-foreground: 28 28% 13%;
+    --muted:                38 33% 89%;
+    --muted-foreground:     38 17% 46%;
+    --accent:               38 33% 89%;
+    --accent-foreground:    28 28% 13%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:               38 27% 80%;
+    --input:                38 27% 80%;
+    --ring:                 38 19% 40%;
+    --radius:               0.6rem;
+
+    --illo-primary:   #7a6e54;
+    --illo-secondary: #2c2418;
+    --illo-leaf:      #5a7040;
+  }
+
+  /* ── Golden Hour ──────────────────────────────────────── */
+  [data-theme="golden"] {
+    --background:           35 67% 97%;
+    --foreground:           20 54% 15%;
+    --card:                 30 57% 92%;
+    --card-foreground:      20 54% 15%;
+    --popover:              35 67% 97%;
+    --popover-foreground:   20 54% 15%;
+    --primary:              28 61% 48%;
+    --primary-foreground:   0 0% 100%;
+    --secondary:            30 57% 92%;
+    --secondary-foreground: 20 54% 15%;
+    --muted:                33 80% 88%;
+    --muted-foreground:     26 34% 44%;
+    --accent:               33 80% 88%;
+    --accent-foreground:    20 54% 15%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border:               33 57% 81%;
+    --input:                33 57% 81%;
+    --ring:                 28 61% 48%;
+    --radius:               0.6rem;
+
+    --illo-primary:   #c47030;
+    --illo-secondary: #3a2010;
+    --illo-leaf:      #7a8040;
+  }
+
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-lora), Georgia, serif;
+  }
+}
+
+@layer components {
+  .card-warm {
+    box-shadow: 0 2px 12px hsl(var(--foreground) / 0.06);
+  }
+  .btn-warm {
+    border-radius: var(--radius);
   }
 }

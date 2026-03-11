@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRow } from "@/types/database";
 import { ShareButton, RemoveBookButton, ListOwnerPanel } from "./list-client";
+import { FernIllo } from "@/components/illustrations/FernIllo";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -125,7 +126,8 @@ export default async function ListDetailPage({ params }: PageProps) {
 
       {/* Book grid */}
       {books.length === 0 ? (
-        <div className="py-16 text-center space-y-2">
+        <div className="py-10 text-center space-y-4">
+          <FernIllo className="mx-auto w-40 h-32 opacity-70" />
           <p className="text-sm text-muted-foreground">No books in this list yet.</p>
           {isOwner && (
             <p className="text-xs text-muted-foreground">

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetterReads — Palette Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f0eb; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 1.6rem; color: #3d2f1f; margin-bottom: 8px; font-weight: 600; }
+  .subtitle { text-align: center; color: #7a6655; margin-bottom: 48px; font-size: 0.95rem; }
+
+  .palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto; }
+
+  .palette-card {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  }
+
+  .palette-label {
+    padding: 6px 14px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-text { position: relative; z-index: 2; }
+  .hero-illo {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  /* ── Palette 1: Driftwood ── */
+  .driftwood { background: #faf6f0; }
+  .driftwood .palette-label { background: #c9a97a; color: #fff; }
+  .driftwood .nav { background: #ede0d0; border-bottom: 1px solid #d4c1a8; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .driftwood .nav .logo { font-weight: 700; font-size: 1rem; color: #5c3d1e; letter-spacing: -0.02em; }
+  .driftwood .nav .nav-links { display: flex; gap: 16px; }
+  .driftwood .nav .nav-links span { font-size: 0.8rem; color: #8a6a4a; cursor: pointer; }
+  .driftwood .nav .nav-links span.active { color: #5c3d1e; font-weight: 600; }
+  .driftwood .hero { background: linear-gradient(135deg, #f0e0ca 0%, #faf6f0 100%); padding: 28px 20px 20px; }
+  .driftwood .hero h2 { font-size: 1.3rem; color: #3d2415; font-weight: 700; margin-bottom: 6px; }
+  .driftwood .hero p { font-size: 0.82rem; color: #7a5c3a; line-height: 1.5; margin-bottom: 16px; }
+  .driftwood .btn-primary { background: #b07d45; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .driftwood .btn-secondary { background: transparent; color: #b07d45; border: 1.5px solid #c9a97a; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-left: 8px; }
+  .driftwood .section { padding: 16px 20px; border-top: 1px solid #e5d4bf; }
+  .driftwood .section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #a07850; margin-bottom: 12px; }
+  .driftwood .book-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; }
+  .driftwood .cover { width: 36px; height: 50px; border-radius: 4px; background: #d4b896; flex-shrink: 0; }
+  .driftwood .cover.c1 { background: #c4956a; }
+  .driftwood .cover.c2 { background: #a8c4a2; }
+  .driftwood .cover.c3 { background: #e8c87a; }
+  .driftwood .book-info .title { font-size: 0.82rem; font-weight: 600; color: #3d2415; }
+  .driftwood .book-info .author { font-size: 0.74rem; color: #9a7858; }
+  .driftwood .badge { display: inline-block; background: #f0e0ca; color: #8a6040; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; margin-left: auto; font-weight: 600; }
+  .driftwood .swatch-row { display: flex; gap: 8px; padding: 14px 20px; background: #faf6f0; }
+  .driftwood .swatch { flex: 1; height: 28px; border-radius: 6px; }
+  .driftwood .palette-name { padding: 12px 20px; background: #faf6f0; }
+  .driftwood .palette-name strong { font-size: 1rem; color: #3d2415; display: block; margin-bottom: 2px; }
+  .driftwood .palette-name span { font-size: 0.78rem; color: #9a7858; line-height: 1.4; display: block; }
+  .driftwood .hero-illo { opacity: 0.14; }
+
+  /* ── Palette 2: Sea Salt ── */
+  .seasalt { background: #f7f9f8; }
+  .seasalt .palette-label { background: #6a9e8f; color: #fff; }
+  .seasalt .nav { background: #e8f0ed; border-bottom: 1px solid #ccddd7; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .seasalt .nav .logo { font-weight: 700; font-size: 1rem; color: #1f4038; letter-spacing: -0.02em; }
+  .seasalt .nav .nav-links { display: flex; gap: 16px; }
+  .seasalt .nav .nav-links span { font-size: 0.8rem; color: #5a7d74; cursor: pointer; }
+  .seasalt .nav .nav-links span.active { color: #1f4038; font-weight: 600; }
+  .seasalt .hero { background: linear-gradient(135deg, #ddeee9 0%, #f7f9f8 100%); padding: 28px 20px 20px; }
+  .seasalt .hero h2 { font-size: 1.3rem; color: #1a3530; font-weight: 700; margin-bottom: 6px; }
+  .seasalt .hero p { font-size: 0.82rem; color: #4a6e65; line-height: 1.5; margin-bottom: 16px; }
+  .seasalt .btn-primary { background: #4a8a7a; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .seasalt .btn-secondary { background: transparent; color: #4a8a7a; border: 1.5px solid #6aaa9a; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-left: 8px; }
+  .seasalt .section { padding: 16px 20px; border-top: 1px solid #ccddd7; }
+  .seasalt .section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5a8a80; margin-bottom: 12px; }
+  .seasalt .book-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; }
+  .seasalt .cover { width: 36px; height: 50px; border-radius: 4px; background: #a8c8c0; flex-shrink: 0; }
+  .seasalt .cover.c1 { background: #7ab8a8; }
+  .seasalt .cover.c2 { background: #c8a87a; }
+  .seasalt .cover.c3 { background: #a8b8d0; }
+  .seasalt .book-info .title { font-size: 0.82rem; font-weight: 600; color: #1a3530; }
+  .seasalt .book-info .author { font-size: 0.74rem; color: #5a8878; }
+  .seasalt .badge { display: inline-block; background: #ddeee9; color: #3a6860; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; margin-left: auto; font-weight: 600; }
+  .seasalt .swatch-row { display: flex; gap: 8px; padding: 14px 20px; background: #f7f9f8; }
+  .seasalt .swatch { flex: 1; height: 28px; border-radius: 6px; }
+  .seasalt .palette-name { padding: 12px 20px; background: #f7f9f8; }
+  .seasalt .palette-name strong { font-size: 1rem; color: #1a3530; display: block; margin-bottom: 2px; }
+  .seasalt .palette-name span { font-size: 0.78rem; color: #5a8878; line-height: 1.4; display: block; }
+
+  /* ── Palette 3: Warm Linen ── */
+  .linen { background: #faf8f4; }
+  .linen .palette-label { background: #9b8c6e; color: #fff; }
+  .linen .nav { background: #f0ebe0; border-bottom: 1px solid #ddd4be; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .linen .nav .logo { font-weight: 700; font-size: 1rem; color: #2c2418; letter-spacing: -0.02em; }
+  .linen .nav .nav-links { display: flex; gap: 16px; }
+  .linen .nav .nav-links span { font-size: 0.8rem; color: #7a6e58; cursor: pointer; }
+  .linen .nav .nav-links span.active { color: #2c2418; font-weight: 600; }
+  .linen .hero { background: linear-gradient(135deg, #ede8dc 0%, #faf8f4 100%); padding: 28px 20px 20px; }
+  .linen .hero h2 { font-size: 1.3rem; color: #2c2418; font-weight: 700; margin-bottom: 6px; }
+  .linen .hero p { font-size: 0.82rem; color: #6a6050; line-height: 1.5; margin-bottom: 16px; }
+  .linen .btn-primary { background: #7a6e54; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .linen .btn-secondary { background: transparent; color: #7a6e54; border: 1.5px solid #9b8c6e; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-left: 8px; }
+  .linen .section { padding: 16px 20px; border-top: 1px solid #ddd4be; }
+  .linen .section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8a7c62; margin-bottom: 12px; }
+  .linen .book-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; }
+  .linen .cover { width: 36px; height: 50px; border-radius: 4px; background: #c8bca8; flex-shrink: 0; }
+  .linen .cover.c1 { background: #b8a88a; }
+  .linen .cover.c2 { background: #a8b898; }
+  .linen .cover.c3 { background: #d4a878; }
+  .linen .book-info .title { font-size: 0.82rem; font-weight: 600; color: #2c2418; }
+  .linen .book-info .author { font-size: 0.74rem; color: #8a7c62; }
+  .linen .badge { display: inline-block; background: #ede8dc; color: #6a5e44; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; margin-left: auto; font-weight: 600; }
+  .linen .swatch-row { display: flex; gap: 8px; padding: 14px 20px; background: #faf8f4; }
+  .linen .swatch { flex: 1; height: 28px; border-radius: 6px; }
+  .linen .palette-name { padding: 12px 20px; background: #faf8f4; }
+  .linen .palette-name strong { font-size: 1rem; color: #2c2418; display: block; margin-bottom: 2px; }
+  .linen .palette-name span { font-size: 0.78rem; color: #8a7c62; line-height: 1.4; display: block; }
+
+  /* ── Palette 4: Golden Hour ── */
+  .golden { background: #fdf8f2; }
+  .golden .palette-label { background: #d4854a; color: #fff; }
+  .golden .nav { background: #f5ece0; border-bottom: 1px solid #e8d4b8; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .golden .nav .logo { font-weight: 700; font-size: 1rem; color: #3a2010; letter-spacing: -0.02em; }
+  .golden .nav .nav-links { display: flex; gap: 16px; }
+  .golden .nav .nav-links span { font-size: 0.8rem; color: #8a6448; cursor: pointer; }
+  .golden .nav .nav-links span.active { color: #3a2010; font-weight: 600; }
+  .golden .hero { background: linear-gradient(135deg, #f5dfc0 0%, #fdf8f2 100%); padding: 28px 20px 20px; }
+  .golden .hero h2 { font-size: 1.3rem; color: #3a2010; font-weight: 700; margin-bottom: 6px; }
+  .golden .hero p { font-size: 0.82rem; color: #7a5438; line-height: 1.5; margin-bottom: 16px; }
+  .golden .btn-primary { background: #c47030; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .golden .btn-secondary { background: transparent; color: #c47030; border: 1.5px solid #d4954a; padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; margin-left: 8px; }
+  .golden .section { padding: 16px 20px; border-top: 1px solid #e8d4b8; }
+  .golden .section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #a07448; margin-bottom: 12px; }
+  .golden .book-row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; }
+  .golden .cover { width: 36px; height: 50px; border-radius: 4px; background: #d4a878; flex-shrink: 0; }
+  .golden .cover.c1 { background: #c48858; }
+  .golden .cover.c2 { background: #a8c098; }
+  .golden .cover.c3 { background: #e8b468; }
+  .golden .book-info .title { font-size: 0.82rem; font-weight: 600; color: #3a2010; }
+  .golden .book-info .author { font-size: 0.74rem; color: #9a6848; }
+  .golden .badge { display: inline-block; background: #f5dfc0; color: #8a5430; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; margin-left: auto; font-weight: 600; }
+  .golden .swatch-row { display: flex; gap: 8px; padding: 14px 20px; background: #fdf8f2; }
+  .golden .swatch { flex: 1; height: 28px; border-radius: 6px; }
+  .golden .palette-name { padding: 12px 20px; background: #fdf8f2; }
+  .golden .palette-name strong { font-size: 1rem; color: #3a2010; display: block; margin-bottom: 2px; }
+  .golden .palette-name span { font-size: 0.78rem; color: #9a6848; line-height: 1.4; display: block; }
+</style>
+</head>
+<body>
+
+<h1>BetterReads — Colour Palette Options</h1>
+<p class="subtitle">Four warm, natural directions — pick the one that feels right and we'll apply it to the whole app</p>
+
+<div class="palette-grid">
+
+  <!-- ══════════════════════════════════
+       1. DRIFTWOOD — bookshelf / stacked books silhouette
+       ══════════════════════════════════ -->
+  <div class="palette-card driftwood">
+    <div class="palette-label">Option 1 — Driftwood</div>
+    <div class="nav">
+      <span class="logo">BetterReads</span>
+      <div class="nav-links">
+        <span class="active">Library</span>
+        <span>Stats</span>
+        <span>Discover</span>
+      </div>
+    </div>
+    <div class="hero" style="min-height:130px;">
+      <!-- Bookshelf silhouette -->
+      <svg class="hero-illo" width="220" height="130" viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.22;">
+        <!-- shelf plank -->
+        <rect x="0" y="100" width="220" height="8" rx="2" fill="#5c3d1e"/>
+        <rect x="0" y="60" width="220" height="5" rx="2" fill="#5c3d1e"/>
+        <!-- books row 1 (bottom shelf) -->
+        <rect x="8"  y="68" width="14" height="32" rx="2" fill="#b07d45"/>
+        <rect x="24" y="72" width="10" height="28" rx="1" fill="#c4956a"/>
+        <rect x="36" y="65" width="16" height="35" rx="2" fill="#8a5c30"/>
+        <rect x="54" y="70" width="12" height="30" rx="2" fill="#d4a860"/>
+        <rect x="68" y="67" width="9"  height="33" rx="1" fill="#a87040"/>
+        <rect x="79" y="73" width="15" height="27" rx="2" fill="#b8906a"/>
+        <rect x="96" y="66" width="11" height="34" rx="2" fill="#7a5030"/>
+        <rect x="109" y="70" width="13" height="30" rx="2" fill="#c8a878"/>
+        <rect x="124" y="64" width="10" height="36" rx="1" fill="#9a6840"/>
+        <rect x="136" y="68" width="16" height="32" rx="2" fill="#d0b080"/>
+        <rect x="154" y="71" width="11" height="29" rx="2" fill="#8c5c34"/>
+        <rect x="167" y="66" width="14" height="34" rx="2" fill="#b88050"/>
+        <rect x="183" y="69" width="12" height="31" rx="2" fill="#c49a6a"/>
+        <rect x="197" y="72" width="16" height="28" rx="2" fill="#a07040"/>
+        <!-- books row 2 (upper shelf) -->
+        <rect x="12" y="28" width="12" height="32" rx="2" fill="#c9a97a"/>
+        <rect x="26" y="32" width="16" height="28" rx="2" fill="#8a6040"/>
+        <rect x="44" y="26" width="10" height="34" rx="1" fill="#b07850"/>
+        <rect x="56" y="30" width="14" height="30" rx="2" fill="#d4b880"/>
+        <rect x="72" y="25" width="11" height="35" rx="2" fill="#9a7050"/>
+        <rect x="85" y="29" width="13" height="31" rx="2" fill="#c08060"/>
+        <rect x="100" y="27" width="9"  height="33" rx="1" fill="#a87848"/>
+        <rect x="111" y="31" width="15" height="29" rx="2" fill="#d8b870"/>
+        <rect x="128" y="26" width="12" height="34" rx="2" fill="#7a5838"/>
+        <rect x="142" y="30" width="10" height="30" rx="2" fill="#b89060"/>
+        <rect x="154" y="28" width="14" height="32" rx="2" fill="#c4a070"/>
+        <rect x="170" y="25" width="11" height="35" rx="1" fill="#906040"/>
+        <rect x="183" y="29" width="16" height="31" rx="2" fill="#d0a868"/>
+        <!-- decorative plant pot -->
+        <ellipse cx="206" cy="97" rx="10" ry="4" fill="#8a6040"/>
+        <rect x="198" y="80" width="16" height="18" rx="3" fill="#a07050"/>
+        <path d="M206 80 Q200 65 194 55" stroke="#5a8040" stroke-width="2" fill="none"/>
+        <ellipse cx="192" cy="53" rx="6" ry="4" fill="#6a9450" transform="rotate(-20 192 53)"/>
+        <path d="M206 78 Q212 63 218 55" stroke="#5a8040" stroke-width="2" fill="none"/>
+        <ellipse cx="220" cy="52" rx="6" ry="4" fill="#6a9450" transform="rotate(20 220 52)"/>
+        <path d="M206 75 Q206 62 206 52" stroke="#4a7030" stroke-width="2" fill="none"/>
+        <ellipse cx="206" cy="50" rx="5" ry="3.5" fill="#5a8840"/>
+      </svg>
+      <div class="hero-text">
+        <h2>Your reading life,<br>beautifully tracked</h2>
+        <p>52 books read · 3 currently reading</p>
+        <button class="btn-primary">Continue reading</button>
+        <button class="btn-secondary">Add book</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Currently Reading</div>
+      <div class="book-row">
+        <div class="cover c1"></div>
+        <div class="book-info"><div class="title">Atomic Habits</div><div class="author">James Clear</div></div>
+        <span class="badge">pg 142</span>
+      </div>
+      <div class="book-row">
+        <div class="cover c2"></div>
+        <div class="book-info"><div class="title">The Midnight Library</div><div class="author">Matt Haig</div></div>
+        <span class="badge">pg 88</span>
+      </div>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch" style="background:#faf6f0"></div>
+      <div class="swatch" style="background:#ede0d0"></div>
+      <div class="swatch" style="background:#d4c1a8"></div>
+      <div class="swatch" style="background:#c9a97a"></div>
+      <div class="swatch" style="background:#b07d45"></div>
+      <div class="swatch" style="background:#5c3d1e"></div>
+    </div>
+    <div class="palette-name">
+      <strong>Driftwood</strong>
+      <span>Sandy creams, warm tans, and caramel brown. Like a well-loved paperback on a sunny shelf. The most "bookshop" feeling of the four.</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       2. SEA SALT — ocean waves + seagrass
+       ══════════════════════════════════ -->
+  <div class="palette-card seasalt">
+    <div class="palette-label">Option 2 — Sea Salt</div>
+    <div class="nav">
+      <span class="logo">BetterReads</span>
+      <div class="nav-links">
+        <span class="active">Library</span>
+        <span>Stats</span>
+        <span>Discover</span>
+      </div>
+    </div>
+    <div class="hero" style="min-height:130px;">
+      <!-- Ocean waves + seagrass silhouette -->
+      <svg class="hero-illo" width="240" height="130" viewBox="0 0 240 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.20;">
+        <!-- distant hills/headland -->
+        <ellipse cx="180" cy="85" rx="90" ry="40" fill="#2a5c50"/>
+        <ellipse cx="50"  cy="90" rx="60" ry="35" fill="#336655"/>
+        <!-- wave layers -->
+        <path d="M0 105 Q30 92 60 105 Q90 118 120 105 Q150 92 180 105 Q210 118 240 105 L240 130 L0 130 Z" fill="#4a8a7a"/>
+        <path d="M0 112 Q40 100 80 112 Q120 124 160 112 Q200 100 240 112 L240 130 L0 130 Z" fill="#5a9a8a"/>
+        <path d="M0 120 Q50 110 100 120 Q150 130 200 120 Q220 115 240 120 L240 130 L0 130 Z" fill="#6aaa9a"/>
+        <!-- seagrass left -->
+        <path d="M18 130 Q14 110 10 90" stroke="#2a6040" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M10 90 Q4  75 8  60"  stroke="#2a6040" stroke-width="2"   fill="none" stroke-linecap="round"/>
+        <ellipse cx="7" cy="58" rx="5" ry="9" fill="#338050" transform="rotate(-15 7 58)"/>
+        <path d="M18 130 Q22 108 28 88" stroke="#338050" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M28 88 Q34 70 30 52"  stroke="#338050" stroke-width="2"   fill="none" stroke-linecap="round"/>
+        <ellipse cx="30" cy="50" rx="5" ry="10" fill="#2a6040" transform="rotate(10 30 50)"/>
+        <path d="M26 130 Q24 112 20 95" stroke="#1f4838" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="19" cy="92" rx="4" ry="7" fill="#2a6040" transform="rotate(-25 19 92)"/>
+        <!-- seagrass right -->
+        <path d="M210 130 Q214 108 220 85" stroke="#2a6040" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M220 85 Q226 65 222 48"  stroke="#2a6040" stroke-width="2"   fill="none" stroke-linecap="round"/>
+        <ellipse cx="222" cy="46" rx="5" ry="9" fill="#338050" transform="rotate(15 222 46)"/>
+        <path d="M218 130 Q212 110 206 88" stroke="#338050" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="205" cy="85" rx="4" ry="8" fill="#2a6040" transform="rotate(-10 205 85)"/>
+        <path d="M222 130 Q228 112 234 92" stroke="#1f4838" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="235" cy="89" rx="4" ry="7" fill="#2a6040" transform="rotate(20 235 89)"/>
+        <!-- sun / moon -->
+        <circle cx="190" cy="32" r="16" fill="#b8d8d0" opacity="0.6"/>
+        <circle cx="190" cy="32" r="11" fill="#cce8e0" opacity="0.5"/>
+        <!-- birds (simple v shapes) -->
+        <path d="M80 38 Q84 34 88 38"  stroke="#1f4038" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M95 28 Q99 24 103 28" stroke="#1f4038" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M108 42 Q111 38 114 42" stroke="#1f4038" stroke-width="1"   fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="hero-text">
+        <h2>Your reading life,<br>beautifully tracked</h2>
+        <p>52 books read · 3 currently reading</p>
+        <button class="btn-primary">Continue reading</button>
+        <button class="btn-secondary">Add book</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Currently Reading</div>
+      <div class="book-row">
+        <div class="cover c1"></div>
+        <div class="book-info"><div class="title">Atomic Habits</div><div class="author">James Clear</div></div>
+        <span class="badge">pg 142</span>
+      </div>
+      <div class="book-row">
+        <div class="cover c2"></div>
+        <div class="book-info"><div class="title">The Midnight Library</div><div class="author">Matt Haig</div></div>
+        <span class="badge">pg 88</span>
+      </div>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch" style="background:#f7f9f8"></div>
+      <div class="swatch" style="background:#e8f0ed"></div>
+      <div class="swatch" style="background:#ccddd7"></div>
+      <div class="swatch" style="background:#6aaa9a"></div>
+      <div class="swatch" style="background:#4a8a7a"></div>
+      <div class="swatch" style="background:#1f4038"></div>
+    </div>
+    <div class="palette-name">
+      <strong>Sea Salt</strong>
+      <span>Cool whites, sage and seafoam greens, deep forest accent. Beach hut meets botanical library. Calm and fresh.</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       3. WARM LINEN — botanical leaf / fern stencil
+       ══════════════════════════════════ -->
+  <div class="palette-card linen">
+    <div class="palette-label">Option 3 — Warm Linen</div>
+    <div class="nav">
+      <span class="logo">BetterReads</span>
+      <div class="nav-links">
+        <span class="active">Library</span>
+        <span>Stats</span>
+        <span>Discover</span>
+      </div>
+    </div>
+    <div class="hero" style="min-height:130px;">
+      <!-- Botanical / fern leaf stencil -->
+      <svg class="hero-illo" width="220" height="140" viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.18;">
+        <!-- Large fern frond right -->
+        <path d="M180 140 Q178 115 170 90 Q162 65 145 42" stroke="#5a4828" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- leaflets off main stem -->
+        <path d="M170 90 Q155 80 148 68" stroke="#5a4828" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M148 68 Q145 62 152 56" stroke="#5a4828" stroke-width="1" fill="none"/>
+        <ellipse cx="156" cy="72" rx="10" ry="5" fill="#6a5830" transform="rotate(-35 156 72)"/>
+        <path d="M163 80 Q146 74 140 62" stroke="#5a4828" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="148" cy="68" rx="11" ry="5" fill="#6a5830" transform="rotate(-40 148 68)"/>
+        <path d="M175 100 Q158 96 150 86" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="157" cy="91" rx="12" ry="5" fill="#7a6838" transform="rotate(-30 157 91)"/>
+        <path d="M178 110 Q162 108 154 100" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="162" cy="104" rx="11" ry="5" fill="#7a6838" transform="rotate(-25 162 104)"/>
+        <path d="M158 72 Q148 58 145 42" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="150" cy="55" rx="9" ry="4" fill="#6a5830" transform="rotate(-50 150 55)"/>
+        <!-- second frond left -->
+        <path d="M40 140 Q44 112 56 88 Q68 64 85 44" stroke="#5a4828" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M56 88 Q72 78 78 65" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="69" cy="75" rx="10" ry="4.5" fill="#6a5830" transform="rotate(35 69 75)"/>
+        <path d="M62 100 Q78 92 82 78" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="73" cy="88" rx="11" ry="4.5" fill="#7a6838" transform="rotate(30 73 88)"/>
+        <path d="M50 110 Q66 104 68 92" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="60" cy="100" rx="10" ry="4" fill="#7a6838" transform="rotate(25 60 100)"/>
+        <path d="M78 65 Q82 50 86 44" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="83" cy="52" rx="9" ry="4" fill="#6a5830" transform="rotate(45 83 52)"/>
+        <!-- small sprig centre -->
+        <path d="M120 140 Q118 120 114 102" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="108" cy="108" rx="8" ry="3.5" fill="#6a5830" transform="rotate(-30 108 108)"/>
+        <ellipse cx="120" cy="106" rx="8" ry="3.5" fill="#6a5830" transform="rotate(20 120 106)"/>
+        <path d="M114 102 Q112 88 116 76" stroke="#5a4828" stroke-width="1.5" fill="none"/>
+        <ellipse cx="109" cy="85" rx="7" ry="3" fill="#6a5830" transform="rotate(-20 109 85)"/>
+        <ellipse cx="118" cy="83" rx="7" ry="3" fill="#6a5830" transform="rotate(25 118 83)"/>
+      </svg>
+      <div class="hero-text">
+        <h2>Your reading life,<br>beautifully tracked</h2>
+        <p>52 books read · 3 currently reading</p>
+        <button class="btn-primary">Continue reading</button>
+        <button class="btn-secondary">Add book</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Currently Reading</div>
+      <div class="book-row">
+        <div class="cover c1"></div>
+        <div class="book-info"><div class="title">Atomic Habits</div><div class="author">James Clear</div></div>
+        <span class="badge">pg 142</span>
+      </div>
+      <div class="book-row">
+        <div class="cover c2"></div>
+        <div class="book-info"><div class="title">The Midnight Library</div><div class="author">Matt Haig</div></div>
+        <span class="badge">pg 88</span>
+      </div>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch" style="background:#faf8f4"></div>
+      <div class="swatch" style="background:#f0ebe0"></div>
+      <div class="swatch" style="background:#ddd4be"></div>
+      <div class="swatch" style="background:#9b8c6e"></div>
+      <div class="swatch" style="background:#7a6e54"></div>
+      <div class="swatch" style="background:#2c2418"></div>
+    </div>
+    <div class="palette-name">
+      <strong>Warm Linen</strong>
+      <span>Creamy off-whites, warm greige, and dark taupe. Very neutral, very quiet. Like a Nordic reading nook — understated elegance.</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       4. GOLDEN HOUR — sunset horizon with dune grasses
+       ══════════════════════════════════ -->
+  <div class="palette-card golden">
+    <div class="palette-label">Option 4 — Golden Hour</div>
+    <div class="nav">
+      <span class="logo">BetterReads</span>
+      <div class="nav-links">
+        <span class="active">Library</span>
+        <span>Stats</span>
+        <span>Discover</span>
+      </div>
+    </div>
+    <div class="hero" style="min-height:130px;">
+      <!-- Golden sunset horizon + dune grass -->
+      <svg class="hero-illo" width="240" height="130" viewBox="0 0 240 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.22;">
+        <!-- sky gradient bands -->
+        <rect x="0" y="0"  width="240" height="130" fill="#fdf0d8"/>
+        <!-- sun -->
+        <circle cx="195" cy="50" r="28" fill="#f0b840" opacity="0.5"/>
+        <circle cx="195" cy="50" r="20" fill="#e8a030" opacity="0.5"/>
+        <!-- sun rays -->
+        <line x1="195" y1="15" x2="195" y2="5"  stroke="#d49020" stroke-width="1.5" opacity="0.4"/>
+        <line x1="218" y1="27" x2="225" y2="20" stroke="#d49020" stroke-width="1.5" opacity="0.4"/>
+        <line x1="230" y1="50" x2="240" y2="50" stroke="#d49020" stroke-width="1.5" opacity="0.4"/>
+        <line x1="218" y1="73" x2="225" y2="80" stroke="#d49020" stroke-width="1.5" opacity="0.4"/>
+        <line x1="172" y1="27" x2="165" y2="20" stroke="#d49020" stroke-width="1.5" opacity="0.4"/>
+        <!-- horizon / dunes -->
+        <path d="M0 90 Q40 78 80 88 Q120 98 160 84 Q195 72 240 82 L240 130 L0 130 Z" fill="#c07040"/>
+        <path d="M0 100 Q50 88 100 98 Q150 108 200 96 Q220 91 240 96 L240 130 L0 130 Z" fill="#d08858"/>
+        <path d="M0 110 Q60 100 120 110 Q180 120 240 110 L240 130 L0 130 Z" fill="#e0a070"/>
+        <!-- dune grass left -->
+        <path d="M20 130 Q16 112 12 94"  stroke="#8a5020" stroke-width="2"   fill="none" stroke-linecap="round"/>
+        <path d="M12 94  Q8 78  14 62"   stroke="#8a5020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M14 62  Q18 48  12 36"  stroke="#7a4818" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <!-- seed head -->
+        <path d="M12 36 Q8 28 6 20"  stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M12 36 Q16 27 18 18" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M12 36 Q12 26 12 16" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M26 130 Q30 110 36 90" stroke="#7a4818" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M36 90 Q40 72 36 56"  stroke="#7a4818" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M36 56 Q34 44 36 34" stroke="#9a6030" stroke-width="1.5" fill="none"/>
+        <path d="M36 34 Q32 24 30 16" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M36 34 Q40 24 42 16" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <!-- dune grass right -->
+        <path d="M205 130 Q208 110 214 90" stroke="#8a5020" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M214 90  Q218 72 214 54" stroke="#8a5020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M214 54 Q212 40 216 28" stroke="#7a4818" stroke-width="1.5" fill="none"/>
+        <path d="M216 28 Q212 18 210 10" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M216 28 Q220 18 222 10" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M216 28 Q216 18 216 10" stroke="#9a6030" stroke-width="1" fill="none"/>
+        <path d="M218 130 Q214 112 208 92" stroke="#7a4818" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M208 92 Q204 74 208 58"  stroke="#7a4818" stroke-width="1.5" fill="none"/>
+        <!-- birds -->
+        <path d="M70 32 Q74 28 78 32"  stroke="#8a5020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M85 22 Q88 18 91 22"  stroke="#8a5020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M100 38 Q102 35 104 38" stroke="#8a5020" stroke-width="1"   fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="hero-text">
+        <h2>Your reading life,<br>beautifully tracked</h2>
+        <p>52 books read · 3 currently reading</p>
+        <button class="btn-primary">Continue reading</button>
+        <button class="btn-secondary">Add book</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Currently Reading</div>
+      <div class="book-row">
+        <div class="cover c1"></div>
+        <div class="book-info"><div class="title">Atomic Habits</div><div class="author">James Clear</div></div>
+        <span class="badge">pg 142</span>
+      </div>
+      <div class="book-row">
+        <div class="cover c2"></div>
+        <div class="book-info"><div class="title">The Midnight Library</div><div class="author">Matt Haig</div></div>
+        <span class="badge">pg 88</span>
+      </div>
+    </div>
+    <div class="swatch-row">
+      <div class="swatch" style="background:#fdf8f2"></div>
+      <div class="swatch" style="background:#f5ece0"></div>
+      <div class="swatch" style="background:#e8d4b8"></div>
+      <div class="swatch" style="background:#d4954a"></div>
+      <div class="swatch" style="background:#c47030"></div>
+      <div class="swatch" style="background:#3a2010"></div>
+    </div>
+    <div class="palette-name">
+      <strong>Golden Hour</strong>
+      <span>Warm ivory, amber, and terracotta. Sunset on a beach — the most vibrant and energetic of the four. Feels joyful and inviting.</span>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center; margin-top:48px; color:#7a6655; font-size:0.85rem;">All four are light-mode by default. Dark mode variants are possible for any of these.</p>
+</body>
+</html>

@@ -8,6 +8,7 @@ import {
   GenreChart,
   RatingChart,
 } from "./analytics-charts";
+import { BookshelfIllo } from "@/components/illustrations/BookshelfIllo";
 import type { ReadingStatus, UserRow } from "@/types/database";
 
 type ReadBook = {
@@ -221,6 +222,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 space-y-10">
+
+      {/* Hero welcome card with bookshelf illustration */}
+      <div className="relative overflow-hidden rounded-xl bg-card border border-border card-warm px-6 py-5">
+        <div className="relative z-10 max-w-[55%]">
+          <h1 className="text-2xl font-bold">Your reading life</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track what you read, discover what to read next.
+          </p>
+        </div>
+        {/* Illustration — fades left to right so it doesn't crowd text */}
+        <div
+          className="absolute inset-y-0 right-0 w-[55%]"
+          style={{ maskImage: "linear-gradient(to right, transparent 0%, black 40%)" }}
+        >
+          <BookshelfIllo className="h-full w-full" />
+        </div>
+      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

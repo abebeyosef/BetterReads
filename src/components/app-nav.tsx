@@ -43,11 +43,11 @@ export function AppNav({ profile }: { profile: UserRow }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         {/* Logo + nav links */}
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="text-lg font-bold tracking-tight">
+          <Link href="/dashboard" className="text-xl font-bold tracking-tight font-serif">
             BetterReads
           </Link>
           <nav className="flex items-center gap-4 text-sm">

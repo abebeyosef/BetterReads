@@ -5,6 +5,34 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRow } from "@/types/database";
+import { useTheme, type ThemeName } from "@/components/theme-provider";
+
+const THEMES: {
+  name: ThemeName;
+  label: string;
+  swatches: string[];
+}[] = [
+  {
+    name: "driftwood",
+    label: "Driftwood",
+    swatches: ["#faf6f0", "#ede0d0", "#b07d45", "#d4c1a8", "#3d2415", "#9a7858"],
+  },
+  {
+    name: "seasalt",
+    label: "Sea Salt",
+    swatches: ["#f7f9f8", "#e8f0ed", "#4a8a7a", "#ccddd7", "#1a3530", "#5a8878"],
+  },
+  {
+    name: "linen",
+    label: "Warm Linen",
+    swatches: ["#faf8f4", "#f0ebe0", "#7a6e54", "#ddd4be", "#2c2418", "#8a7c62"],
+  },
+  {
+    name: "golden",
+    label: "Golden Hour",
+    swatches: ["#fdf8f2", "#f5ece0", "#c47030", "#e8d4b8", "#3a2010", "#9a6848"],
+  },
+];
 
 function getInitials(name: string) {
   return name
@@ -47,6 +75,8 @@ export function SettingsForm({
 
   const [clearStep, setClearStep] = useState<"idle" | "confirm" | "clearing" | "cleared">("idle");
   const [clearError, setClearError] = useState<string | null>(null);
+
+  const { theme, setTheme } = useTheme();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -166,6 +196,49 @@ export function SettingsForm({
 
   return (
     <form onSubmit={handleSave} className="space-y-8">
+
+      {/* Appearance */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Appearance
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {THEMES.map((t) => {
+            const isSelected = theme === t.name;
+            return (
+              <button
+                key={t.name}
+                type="button"
+                onClick={() => setTheme(t.name)}
+                className={`rounded-lg border-2 p-3 text-left space-y-2 transition-colors ${
+                  isSelected
+                    ? "border-primary"
+                    : "border-border hover:border-muted-foreground"
+                }`}
+              >
+                {/* Colour swatches */}
+                <div className="flex gap-1">
+                  {t.swatches.map((colour) => (
+                    <span
+                      key={colour}
+                      className="flex-1 h-4 rounded-sm"
+                      style={{ backgroundColor: colour }}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">{t.label}</span>
+                  {isSelected && (
+                    <span className="text-xs text-primary font-bold">✓</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">Changes apply instantly.</p>
+      </section>
+
       {/* Avatar */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -313,7 +386,7 @@ export function SettingsForm({
         </div>
       )}
       {success && (
-        <div className="rounded-md bg-green-500/15 border border-green-500/30 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+        <div className="rounded-md bg-green-500/15 border border-green-500/30 px-4 py-3 text-sm text-green-700">
           Profile saved successfully.
         </div>
       )}
@@ -381,7 +454,7 @@ export function SettingsForm({
           )}
 
           {clearStep === "cleared" && (
-            <p className="text-sm text-green-600 dark:text-green-400">
+            <p className="text-sm text-green-700">
               Library cleared. You can now re-import.
             </p>
           )}

@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 4 — Polish + Hardening
+**Active phase:** Phase 5 — Design Overhaul
 **Last updated:** 2026-03-11
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** None — all phases complete. See Future Development Notes for optional next steps.
+**Next task:** All phases complete. See Future Development Notes for optional next steps.
 
 ---
 
@@ -21,6 +21,55 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 2 | Analytics + Recommendations + Goal | ✅ Complete |
 | Phase 3 | Social Layer | ✅ Complete |
 | Phase 4 | Polish + Hardening | ✅ Complete |
+| Phase 5 | Design Overhaul | ✅ Complete |
+
+---
+
+## Phase 5 — Design Overhaul ✅ Complete (2026-03-11)
+
+### Objective
+Replace the dark zinc shadcn theme with a warm, inviting light-mode design system.
+Full specification is in `DESIGN_BRIEF.md` at the repo root.
+
+### Deliverables
+- [x] Four theme CSS variable sets in globals.css (Driftwood, Sea Salt, Warm Linen, Golden Hour)
+- [x] ThemeProvider component with useTheme hook
+- [x] FOUC-prevention script in layout.tsx
+- [x] Theme selector in Settings → Appearance
+- [x] Four SVG illustration components (BookshelfIllo, WavesIllo, FernIllo, SunsetIllo)
+- [x] Illustrations placed on Dashboard, Library, empty states, auth pages
+- [x] Typography: Lora serif for headings
+- [x] AppNav and card refinements
+
+### What was built
+
+**Theme system:**
+- `src/app/globals.css` — replaced dark zinc shadcn theme with four named warm light-mode theme blocks using `[data-theme="..."]` selectors. Removed `.dark {}` block. Added `@layer components` with `.card-warm` and `.btn-warm` utilities. Added global `h1,h2,h3` font-family rule using `--font-lora`.
+- `src/components/theme-provider.tsx` — `ThemeProvider` client component + `useTheme()` hook. Reads theme from localStorage on mount; `setTheme()` updates `data-theme` on `<html>`, saves to localStorage, writes same-site cookie `betterreads-theme`.
+- `src/app/layout.tsx` — removed `className="dark"`, added FOUC-prevention inline script (reads cookie → localStorage → falls back to `driftwood`), imported `Lora` from next/font/google with `variable: "--font-lora"`, wrapped children in `ThemeProvider`.
+
+**Illustrations:**
+- `src/components/illustrations/BookshelfIllo.tsx` — horizontal bookshelf with varied book spines and potted plant. Uses `--illo-primary`, `--illo-secondary`, `--illo-leaf`.
+- `src/components/illustrations/WavesIllo.tsx` — three layered wave paths with seagrass stalks on both sides.
+- `src/components/illustrations/FernIllo.tsx` — two botanical fern fronds with leaflets, ~20% opacity. Used on empty states.
+- `src/components/illustrations/SunsetIllo.tsx` — horizon sunset with dune layers and dune grass. Used on auth pages.
+
+**Page updates:**
+- `/dashboard` — hero welcome card (`bg-card`, `card-warm`) with `BookshelfIllo` positioned absolutely at right edge, masked with a left-to-right gradient.
+- `/library` — replaced `<h1>` + "+ Add books" row with a `WavesIllo` hero banner card. `EmptyState` now includes `FernIllo` above the CTA text.
+- `/lists/[id]` — empty list state now shows `FernIllo`.
+- `/login` + `/signup` — auth layout now renders `SunsetIllo` below the form card.
+- `/settings` — new "Appearance" section at the top with four clickable theme cards (colour swatches + name + tick). Wired to `useTheme()` — instant apply.
+- `app-nav.tsx` — logo now uses `font-serif text-xl`; border changed to `border-border/60`.
+- Removed stale `dark:` Tailwind variants from settings-form success/cleared messages.
+
+### Key decisions
+- Themes applied via `data-theme` attribute on `<html>` (not className) — avoids Tailwind's dark mode class and works with all CSS variable selectors.
+- Default theme: `driftwood`.
+- FOUC-prevention script reads `document.cookie` first (SSR-compatible) before falling back to localStorage, so the correct theme is applied before first paint without a flash.
+- `suppressHydrationWarning` on `<html>` prevents React warning about `data-theme` mismatch between server (no attribute) and client (attribute set by script).
+- SVG illustrations use CSS custom properties (`var(--illo-primary)` etc.) as fill/stroke — they recolour automatically when the theme changes.
+- No Supabase schema change required — theme is a purely client-side preference.
 
 ---
 

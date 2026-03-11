@@ -4,6 +4,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadingStatus } from "@/types/database";
 import { EnrichBooksButton } from "./enrich-button";
+import { WavesIllo } from "@/components/illustrations/WavesIllo";
+import { FernIllo } from "@/components/illustrations/FernIllo";
 
 type SortOption = "recent" | "finished" | "rating" | "title";
 
@@ -98,14 +100,23 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Library</h1>
-        <Link
-          href="/search"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          + Add books
-        </Link>
+      {/* Hero banner with waves illustration */}
+      <div className="relative overflow-hidden rounded-xl bg-card border border-border card-warm px-6 py-5">
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">My Library</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {countMap.read + countMap.currently_reading + countMap.want_to_read} books total
+            </p>
+          </div>
+          <Link
+            href="/search"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            + Add books
+          </Link>
+        </div>
+        <WavesIllo className="absolute bottom-0 left-0 w-full h-24 opacity-60" />
       </div>
 
       <EnrichBooksButton nullCoverCount={nullCoverCount} />
@@ -222,17 +233,18 @@ function BookCard({ entry }: { entry: LibraryEntry }) {
 }
 
 function EmptyState({ status }: { status: ReadingStatus }) {
-  const messages: Record<ReadingStatus, { text: string; cta: string }> = {
-    currently_reading: { text: "Nothing in progress yet.", cta: "Find something to read" },
-    want_to_read: { text: "Your reading list is empty.", cta: "Discover books" },
-    read: { text: "No books marked as read yet.", cta: "Add your first" },
+  const messages: Record<ReadingStatus, { text: string; cta: string; href: string }> = {
+    currently_reading: { text: "Nothing in progress yet.", cta: "Find something to read", href: "/search" },
+    want_to_read: { text: "Your reading list is empty.", cta: "Discover books", href: "/search" },
+    read: { text: "No books marked as read yet.", cta: "Import from Goodreads", href: "/import" },
   };
-  const { text, cta } = messages[status];
+  const { text, cta, href } = messages[status];
   return (
-    <div className="py-20 text-center space-y-3">
+    <div className="py-12 text-center space-y-4">
+      <FernIllo className="mx-auto w-40 h-32 opacity-70" />
       <p className="text-muted-foreground text-sm">{text}</p>
       <Link
-        href="/search"
+        href={href}
         className="text-sm font-medium text-foreground underline underline-offset-4 hover:opacity-80"
       >
         {cta} →
