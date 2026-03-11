@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import type { BookSearchResult } from "@/types/books";
+import { normalizeGenres } from "@/lib/genres";
 
 // ── Google Books ──────────────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ function parseGoogleBook(item: GoogleBooksItem): BookSearchResult {
     language: v.language ?? null,
     isbn_10: ids.find((x) => x.type === "ISBN_10")?.identifier ?? null,
     isbn_13: ids.find((x) => x.type === "ISBN_13")?.identifier ?? null,
-    genres: v.categories ?? null,
+    genres: normalizeGenres(v.categories),
   };
 }
 
@@ -94,7 +95,7 @@ function parseOpenLibraryDoc(doc: OLDoc): BookSearchResult {
     language: doc.language?.[0] ?? null,
     isbn_10: isbn10,
     isbn_13: isbn13,
-    genres: doc.subject?.slice(0, 5) ?? null,
+    genres: normalizeGenres(doc.subject?.slice(0, 5)),
   };
 }
 

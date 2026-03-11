@@ -1,11 +1,39 @@
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRow, ReadingStatus } from "@/types/database";
 import { FollowButton } from "./follow-button";
 
 type PageProps = { params: Promise<{ username: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: profile } = await db
+    .from("users")
+    .select("display_name, bio, avatar_url")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!profile) return { title: "BetterReads" };
+
+  const title = `${profile.display_name} (@${username}) — BetterReads`;
+  const description = profile.bio ?? `View ${profile.display_name}'s reading activity on BetterReads.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      ...(profile.avatar_url ? { images: [{ url: profile.avatar_url }] } : {}),
+    },
+  };
+}
 
 function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);

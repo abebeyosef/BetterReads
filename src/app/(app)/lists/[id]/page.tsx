@@ -1,11 +1,36 @@
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRow } from "@/types/database";
 import { ShareButton, RemoveBookButton, ListOwnerPanel } from "./list-client";
 
 type PageProps = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: list } = await db
+    .from("lists")
+    .select("title, description, is_public, users(display_name)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!list || !list.is_public) return { title: "BetterReads" };
+
+  const owner = list.users?.display_name;
+  const title = owner ? `${list.title} by ${owner}` : list.title;
+  const description = list.description ?? `A book list on BetterReads.`;
+
+  return {
+    title: `${title} — BetterReads`,
+    description,
+    openGraph: { title, description },
+  };
+}
 
 type ListBook = {
   position: number;

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { LibraryActions } from "./library-actions";
 import { ReviewForm } from "./review-form";
@@ -8,6 +9,35 @@ import { AddToListButton } from "./add-to-list";
 import type { UserBookRow } from "@/types/database";
 
 type PageProps = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: book } = await db
+    .from("books")
+    .select("title, subtitle, description, cover_url, book_authors(authors(name))")
+    .eq("id", id)
+    .single();
+
+  if (!book) return { title: "Book not found — BetterReads" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authors: string[] = book.book_authors?.map((ba: any) => ba.authors?.name).filter(Boolean) ?? [];
+  const title = authors.length > 0 ? `${book.title} by ${authors.join(", ")}` : book.title;
+  const description = book.description?.slice(0, 160) ?? `Track and review ${book.title} on BetterReads.`;
+
+  return {
+    title: `${title} — BetterReads`,
+    description,
+    openGraph: {
+      title,
+      description,
+      ...(book.cover_url ? { images: [{ url: book.cover_url, width: 128, height: 192 }] } : {}),
+    },
+  };
+}
 
 type Review = {
   id: string;

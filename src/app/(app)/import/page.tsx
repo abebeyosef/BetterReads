@@ -277,6 +277,9 @@ export default function ImportPage() {
               All books will be imported. Ratings, dates, and reading status are preserved.
             </p>
           </div>
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
           <div className="flex gap-3">
             <button
               onClick={startImport}

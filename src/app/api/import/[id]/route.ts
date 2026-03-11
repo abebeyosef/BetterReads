@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadingStatus } from "@/types/database";
+import { normalizeGenres } from "@/lib/genres";
 
 type ParsedRow = {
   title: string;
@@ -46,7 +47,7 @@ function normalizeGoogleBook(item: any) {
     language: (info.language ?? null) as string | null,
     isbn_10: isbn10 as string | null,
     isbn_13: isbn13 as string | null,
-    genres: (info.categories ?? null) as string[] | null,
+    genres: normalizeGenres(info.categories) as string[] | null,
     authors: (info.authors ?? []) as string[],
   };
 }

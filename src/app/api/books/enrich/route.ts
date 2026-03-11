@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeGenres } from "@/lib/genres";
 
 type GoogleBooksItem = {
   id: string;
@@ -56,7 +57,7 @@ async function fetchGoogleBooksData(
       cover_url,
       description: v.description ?? null,
       page_count: v.pageCount ?? null,
-      genres: v.categories ?? null,
+      genres: normalizeGenres(v.categories),
     };
   } catch (err) {
     console.error(`[enrich] fetch error for "${title}":`, err);

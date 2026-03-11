@@ -1,4 +1,4 @@
-# Shelf
+# BetterReads
 
 A modern, social book-tracking web app — Goodreads but better, inspired by Letterboxd.
 

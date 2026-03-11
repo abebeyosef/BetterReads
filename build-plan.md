@@ -4,7 +4,7 @@
 
 A modern, social book-tracking web application — a "Goodreads, but better" — inspired by Letterboxd's clean design and social-first approach. The platform lets users search for books, log reading activity with dates and ratings, write reviews, see reading analytics and trends, get personalised recommendations, and follow friends' reading activity. It starts as a personal tool for two users but is architected to scale to hundreds or thousands. The primary differentiators are a modern UI, meaningful reading analytics, and a frictionless Goodreads import that delivers instant value.
 
-**Working name:** Shelf (placeholder — short, memorable, book-relevant)
+**Name:** BetterReads
 
 ---
 

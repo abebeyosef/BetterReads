@@ -48,7 +48,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/search") ||
     pathname.startsWith("/import") ||
     pathname.startsWith("/lists") ||
-    pathname.startsWith("/settings");
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/invite");
 
   if (isProtected && !user) {
     const redirectUrl = new URL("/login", request.url);

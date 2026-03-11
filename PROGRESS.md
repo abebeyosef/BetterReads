@@ -1,4 +1,4 @@
-# Shelf — Progress Log
+# BetterReads — Progress Log
 
 This file is the single source of truth for what has been built, what decisions were made, and what comes next. It must be updated after every task. See README.md for full logging instructions.
 
@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 3 — Social Layer
-**Last updated:** 2026-03-05
+**Active phase:** Phase 4 — Polish + Hardening
+**Last updated:** 2026-03-11
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Phase 4 — Polish + Hardening
+**Next task:** None — all phases complete. See Future Development Notes for optional next steps.
 
 ---
 
@@ -20,11 +20,59 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 1 | Core Loop + Import | ✅ Complete |
 | Phase 2 | Analytics + Recommendations + Goal | ✅ Complete |
 | Phase 3 | Social Layer | ✅ Complete |
-| Phase 4 | Polish + Scale | ⬜ Not started |
+| Phase 4 | Polish + Hardening | ✅ Complete |
 
 ---
 
-## Phase 3 — Social Layer 🔄 In progress
+## Phase 4 — Polish + Hardening ✅ Complete (2026-03-11)
+
+### Rename: Shelf → BetterReads ✅
+Updated all user-facing "Shelf" references to "BetterReads":
+- `src/app/layout.tsx` — page title
+- `src/app/(auth)/login/page.tsx` — logo h1
+- `src/app/(auth)/signup/page.tsx` — logo h1
+- `src/components/app-nav.tsx` — nav logo
+- `package.json` — package name
+- `README.md`, `PROGRESS.md`, `build-plan.md` — doc headings
+- Goodreads CSV field references ("Exclusive Shelf") in `import/page.tsx` were intentionally left unchanged.
+
+### Step 1 — Error Handling ✅
+- `src/app/(app)/error.tsx` — global error boundary with "Try again" + "Go to dashboard" actions.
+- `src/app/(app)/not-found.tsx` — 404 page for the app route group.
+- Loading skeletons (`loading.tsx`) for all heavy routes: `/` (app group), `/library`, `/books/[id]`, `/feed`, `/lists`.
+- Fixed missing error display in the import preview step (error from `startImport` was set but not rendered).
+
+### Step 2 — Performance ✅
+- Loading skeletons (from Step 1) are the main UX win — pages show animated placeholders instead of blank screens during server fetch.
+- All book grid images already had correct responsive `sizes` attributes from prior phases.
+- No DB index changes needed at current scale.
+
+### Step 3 — SEO Meta Tags ✅
+Added `generateMetadata` with Open Graph support to:
+- `src/app/(app)/books/[id]/page.tsx` — title: "Book Title by Author — BetterReads", description from book.description (truncated to 160 chars), OG image from cover_url.
+- `src/app/(app)/lists/[id]/page.tsx` — title: "List Title by Owner — BetterReads". Private lists return bare "BetterReads" title only.
+- `src/app/(app)/users/[username]/page.tsx` — title: "Display Name (@username) — BetterReads", description from bio, OG image from avatar_url.
+
+### Step 4 — Invite Flow ✅
+- `src/app/(app)/invite/page.tsx` — invite page with copy-to-clipboard signup link, WhatsApp share link, and Email mailto link.
+- Added "Invite a friend" to the user dropdown in `app-nav.tsx`.
+- Added `/invite` to protected paths in `middleware.ts`.
+
+### Step 5 — Data Quality ✅
+- `src/lib/genres.ts` — `normalizeGenres()` utility. Takes raw Google Books `categories` strings (e.g. "Fiction / Science Fiction"), extracts the most specific segment (last after "/"), strips noise prefixes ("Juvenile ", "Young Adult "), deduplicates, and filters out bare catch-all labels ("Fiction", "Nonfiction", "General").
+- Applied to all three genre ingestion points: `api/books/search/route.ts` (Google Books + Open Library), `api/books/enrich/route.ts`, `api/import/[id]/route.ts`.
+- Fixes dashboard genre chart and book detail page genre chips showing overly verbose or meaningless categories.
+- Note: existing books in the DB retain old genre strings. Run "Fix covers" (enrich) to re-fetch and normalize existing entries.
+
+**Key decisions:**
+- `generateMetadata` re-queries the DB rather than sharing a fetch with the page — Next.js caches server requests within the same render, so there's no double round-trip.
+- Private lists return a generic title in metadata to avoid leaking list names to crawlers.
+- Invite page uses `window.location.origin` at runtime (client component) so it works on both Vercel and localhost without hardcoding a domain.
+- Genre normalization takes the last segment (most specific) rather than the first (most generic). "Fiction / Science Fiction" → "Science Fiction" is more useful than "Fiction".
+
+---
+
+## Phase 3 — Social Layer ✅ Complete (2026-03-05)
 
 ### Steps 1–4 — Activity Events, Feed, Public Profiles, Follow System ✅ Complete (2026-03-05)
 

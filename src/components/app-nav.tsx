@@ -48,7 +48,7 @@ export function AppNav({ profile }: { profile: UserRow }) {
         {/* Logo + nav links */}
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="text-lg font-bold tracking-tight">
-            Shelf
+            BetterReads
           </Link>
           <nav className="flex items-center gap-4 text-sm">
             {NAV_LINKS.map(({ href, label }) => (
@@ -116,6 +116,14 @@ export function AppNav({ profile }: { profile: UserRow }) {
                   className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
                 >
                   Import from Goodreads
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/invite"
+                  className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
+                >
+                  Invite a friend
                 </Link>
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 h-px bg-border" />

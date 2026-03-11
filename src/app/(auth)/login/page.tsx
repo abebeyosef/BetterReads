@@ -60,7 +60,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-sm space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Shelf</h1>
+        <h1 className="text-3xl font-bold tracking-tight">BetterReads</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Sign in to your account
         </p>
