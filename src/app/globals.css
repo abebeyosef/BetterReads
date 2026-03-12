@@ -135,3 +135,11 @@
     border-radius: var(--radius);
   }
 }
+
+@layer base {
+  /* Apply warm shadow to all bordered card-background elements automatically */
+  .bg-card.border,
+  .bg-card.border-border {
+    box-shadow: 0 2px 12px hsl(var(--foreground) / 0.05);
+  }
+}

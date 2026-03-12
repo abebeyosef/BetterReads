@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 5 — Design Overhaul
-**Last updated:** 2026-03-11
+**Active phase:** Phase 7 — Core Enrichment (ready to plan)
+**Last updated:** 2026-03-12
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** All phases complete. See Future Development Notes for optional next steps.
+**Next task:** Run `supabase/migrations/002_features.sql` in Supabase SQL Editor (required before Phase 6 features go live), then start Phase 7
 
 ---
 
@@ -22,6 +22,61 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 3 | Social Layer | ✅ Complete |
 | Phase 4 | Polish + Hardening | ✅ Complete |
 | Phase 5 | Design Overhaul | ✅ Complete |
+| Phase 6 | Quick Wins | ✅ Complete |
+| Phase 7 | Core Enrichment | 🔲 Planned |
+| Phase 8 | Social Depth | 🔲 Planned |
+| Phase 9 | Advanced Features | 🔲 Planned |
+
+---
+
+## Phase 6–9 Planning ✅ Complete (2026-03-12)
+
+### Deliverables
+- [x] `STORYGRAPH_FEATURES.md` — full feature map with BetterReads equivalents and complexity ratings
+- [x] `BRAND_LANGUAGE.md` — BetterReads naming system for all new features (Vibes, Tempo, Heads Up, Check-ins, etc.)
+- [x] `supabase/migrations/002_features.sql` — complete DB schema for all Phase 6–9 features (23 new tables, RLS, seed data)
+- [x] `FEATURES_SPEC.md` — comprehensive Claude Code build brief: routes, components, API signatures, TypeScript types, file structure, build order
+
+### What's ready for Claude Code
+Run the migration first: `supabase/migrations/002_features.sql`
+
+Then follow `FEATURES_SPEC.md` phase by phase. Phase 6 first (quick wins):
+1. Extended statuses: On Hold, Left Behind, On My Shelf
+2. Loved ❤ button
+3. Quarter-star ratings (0.25 increments)
+4. Format picker (Physical / eBook / Audiobook / ARC)
+5. Labels (custom colour-coded tags)
+6. Public/private collections + profile display
+7. Backdate auto-fill (auto-set finish date on 'read')
+8. Data export CSV endpoint
+
+---
+
+## Phase 6 — Quick Wins ✅ Complete (2026-03-12)
+
+### Deliverables
+- [x] Extended statuses: On Hold, Left Behind — pill buttons on book detail page (requires 002_features.sql migration)
+- [x] Loved ❤ button — heart toggle on book page, stored in `is_loved` column
+- [x] Quarter-star ratings — 0.25 increment hover detection via `getBoundingClientRect`, visual clip-path fill
+- [x] Format picker — Print / Hardback / eBook / Audiobook / Other pill selector in details panel
+- [x] On My Shelf — `is_owned` checkbox in details panel
+- [x] Backdate auto-fill — `date_finished` auto-set to today when status changes to "Finished"
+- [x] Labels — `/api/labels` (GET/POST/DELETE) + `/api/labels/book` (GET/PUT) + `LabelPicker` component with colour presets
+- [x] Public collections on profile — "Collections" section on `/users/[username]` showing public lists with mini cover stacks
+- [x] Data export CSV — `GET /api/export` downloads full library with all fields as CSV; "Export CSV" link on library page
+
+### Files changed
+- `src/types/database.ts` — Added `ExtendedStatus`, `BookFormat`, `LabelRow` types; extended `UserBookRow`
+- `src/app/api/library/route.ts` — POST accepts new fields; new PATCH endpoint for partial updates; rating validates 0.25–5.0
+- `src/app/(app)/books/[id]/library-actions.tsx` — Full rebuild: extended statuses, loved toggle, quarter-star rating, format picker, is_owned checkbox, backdate auto-fill, LabelPicker
+- `src/app/api/labels/route.ts` — Label CRUD
+- `src/app/api/labels/book/route.ts` — Attach/detach labels per user_book
+- `src/app/(app)/users/[username]/page.tsx` — Added Collections section with public lists
+- `src/app/(app)/library/page.tsx` — Added "Export CSV" link in header
+- `src/app/api/export/route.ts` — CSV export endpoint
+
+### Migration note
+Phase 6 code is deployed but **requires `supabase/migrations/002_features.sql` to be run** in the Supabase SQL Editor before the new columns (extended_status, is_loved, is_owned, format, labels tables) will work.
 
 ---
 
@@ -35,11 +90,19 @@ Full specification is in `DESIGN_BRIEF.md` at the repo root.
 - [x] Four theme CSS variable sets in globals.css (Driftwood, Sea Salt, Warm Linen, Golden Hour)
 - [x] ThemeProvider component with useTheme hook
 - [x] FOUC-prevention script in layout.tsx
-- [x] Theme selector in Settings → Appearance
+- [x] Theme selector in Settings → "How It Looks"
 - [x] Four SVG illustration components (BookshelfIllo, WavesIllo, FernIllo, SunsetIllo)
-- [x] Illustrations placed on Dashboard, Library, empty states, auth pages
+- [x] Illustrations placed on Dashboard, Library, Lists, empty states, auth pages
 - [x] Typography: Lora serif for headings
 - [x] AppNav and card refinements
+- [x] Brand language applied across all pages (BRAND_LANGUAGE.md names)
+  - Status labels: Finished / Reading Now / Up Next (was: Read / Currently reading / Want to read)
+  - Dashboard: "Year in Books", "Reading Now", "Made for You", "Your Reading Story"
+  - Settings: "How It Looks", "Year in Books Goal"
+  - Lists page: "My Collections", FernIllo empty state
+  - Book page status picker: Finished / Reading Now / Up Next
+  - User profile stats: Finished / Reading Now / Up Next
+  - Warm card shadow applied globally via CSS to all .bg-card.border elements
 
 ### What was built
 

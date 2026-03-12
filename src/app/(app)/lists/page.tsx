@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CreateListForm } from "./create-list-form";
+import { FernIllo } from "@/components/illustrations/FernIllo";
 
 type ListEntry = {
   id: string;
@@ -27,13 +28,14 @@ export default async function ListsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <h1 className="text-2xl font-bold">My Lists</h1>
+      <h1 className="text-2xl font-bold">My Collections</h1>
 
       <CreateListForm />
 
       {!lists || lists.length === 0 ? (
-        <div className="py-16 text-center">
-          <p className="text-sm text-muted-foreground">No lists yet. Create one above to get started.</p>
+        <div className="py-12 text-center space-y-4">
+          <FernIllo className="mx-auto w-40 h-32 opacity-70" />
+          <p className="text-sm text-muted-foreground">You haven&apos;t made any Collections yet — create one above to get started.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

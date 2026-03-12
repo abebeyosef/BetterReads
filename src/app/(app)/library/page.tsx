@@ -14,9 +14,9 @@ type PageProps = {
 };
 
 const STATUS_LABELS: Record<ReadingStatus, string> = {
-  want_to_read: "Want to read",
-  currently_reading: "Reading",
-  read: "Read",
+  want_to_read: "Up Next",
+  currently_reading: "Reading Now",
+  read: "Finished",
 };
 
 const TABS: ReadingStatus[] = ["currently_reading", "want_to_read", "read"];
@@ -109,12 +109,21 @@ export default async function LibraryPage({ searchParams }: PageProps) {
               {countMap.read + countMap.currently_reading + countMap.want_to_read} books total
             </p>
           </div>
-          <Link
-            href="/search"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            + Add books
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href="/api/export"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="Download your library as CSV"
+            >
+              Export CSV
+            </a>
+            <Link
+              href="/search"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              + Add books
+            </Link>
+          </div>
         </div>
         <WavesIllo className="absolute bottom-0 left-0 w-full h-24 opacity-60" />
       </div>
@@ -234,9 +243,9 @@ function BookCard({ entry }: { entry: LibraryEntry }) {
 
 function EmptyState({ status }: { status: ReadingStatus }) {
   const messages: Record<ReadingStatus, { text: string; cta: string; href: string }> = {
-    currently_reading: { text: "Nothing in progress yet.", cta: "Find something to read", href: "/search" },
-    want_to_read: { text: "Your reading list is empty.", cta: "Discover books", href: "/search" },
-    read: { text: "No books marked as read yet.", cta: "Import from Goodreads", href: "/import" },
+    currently_reading: { text: "Nothing on the go yet — what are you starting next?", cta: "Find something to read", href: "/search" },
+    want_to_read: { text: "Your Up Next shelf is empty. What's calling to you?", cta: "Discover books", href: "/search" },
+    read: { text: "Your shelf is waiting. Import your Goodreads library or add your first book.", cta: "Import from Goodreads", href: "/import" },
   };
   const { text, cta, href } = messages[status];
   return (

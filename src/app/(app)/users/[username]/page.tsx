@@ -68,6 +68,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     { data: isFollowingRow },
     { data: recentReads },
     { data: recentReviews },
+    { data: publicLists },
   ] = await Promise.all([
     db
       .from("user_books")
@@ -117,6 +118,23 @@ export default async function PublicProfilePage({ params }: PageProps) {
         text: string;
         created_at: string;
         books: { id: string; title: string; cover_url: string | null } | null;
+      }[] | null;
+    }>,
+    db
+      .from("lists")
+      .select(`
+        id, title, description,
+        list_books ( book_id, books ( cover_url ) )
+      `)
+      .eq("user_id", profile.id)
+      .eq("is_public", true)
+      .order("updated_at", { ascending: false })
+      .limit(6) as Promise<{
+      data: {
+        id: string;
+        title: string;
+        description: string | null;
+        list_books: { book_id: string; books: { cover_url: string | null } | null }[];
       }[] | null;
     }>,
   ]);
@@ -183,9 +201,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
       {/* Reading stats */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Read" value={counts.read} />
-        <StatCard label="Reading" value={counts.currently_reading} />
-        <StatCard label="Want to read" value={counts.want_to_read} />
+        <StatCard label="Finished" value={counts.read} />
+        <StatCard label="Reading Now" value={counts.currently_reading} />
+        <StatCard label="Up Next" value={counts.want_to_read} />
       </div>
 
       {/* Recent reads */}
@@ -239,6 +257,61 @@ export default async function PublicProfilePage({ params }: PageProps) {
                   </Link>
                   <p className="text-sm text-muted-foreground line-clamp-3">{review.text}</p>
                 </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Public collections */}
+      {publicLists && publicLists.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Collections
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {publicLists.map((list) => {
+              const covers = list.list_books
+                ?.slice(0, 3)
+                .map((lb) => lb.books?.cover_url)
+                .filter(Boolean) as string[];
+              return (
+                <Link
+                  key={list.id}
+                  href={`/lists/${list.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 hover:bg-accent transition-colors group"
+                >
+                  {/* Mini cover stack */}
+                  <div className="flex -space-x-2 flex-shrink-0">
+                    {covers.length > 0 ? (
+                      covers.map((url, i) => (
+                        <div
+                          key={i}
+                          className="relative h-10 w-7 overflow-hidden rounded bg-muted border border-background"
+                          style={{ zIndex: covers.length - i }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="h-10 w-7 rounded bg-muted border border-background" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-tight group-hover:underline line-clamp-1">
+                      {list.title}
+                    </p>
+                    {list.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                        {list.description}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {list.list_books?.length ?? 0} {list.list_books?.length === 1 ? "book" : "books"}
+                    </p>
+                  </div>
+                </Link>
               );
             })}
           </div>

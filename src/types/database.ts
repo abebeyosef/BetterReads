@@ -2,6 +2,8 @@
 // Regenerate with: npx supabase gen types typescript --project-id fzbqvopmlizieegapixf > src/types/database.ts
 
 export type ReadingStatus = "want_to_read" | "currently_reading" | "read";
+export type ExtendedStatus = "on_hold" | "left_behind";
+export type BookFormat = "print" | "ebook" | "audiobook" | "hardback" | "other";
 export type EventType =
   | "started_reading"
   | "finished_reading"
@@ -137,6 +139,11 @@ export type Database = {
           user_id: string;
           book_id: string;
           status: ReadingStatus;
+          extended_status: ExtendedStatus | null;
+          is_owned: boolean;
+          is_loved: boolean;
+          format: BookFormat | null;
+          dnf_page: number | null;
           rating: number | null;
           date_started: string | null;
           date_finished: string | null;
@@ -148,6 +155,11 @@ export type Database = {
           user_id: string;
           book_id: string;
           status: ReadingStatus;
+          extended_status?: ExtendedStatus | null;
+          is_owned?: boolean;
+          is_loved?: boolean;
+          format?: BookFormat | null;
+          dnf_page?: number | null;
           rating?: number | null;
           date_started?: string | null;
           date_finished?: string | null;
@@ -156,11 +168,47 @@ export type Database = {
         };
         Update: {
           status?: ReadingStatus;
+          extended_status?: ExtendedStatus | null;
+          is_owned?: boolean;
+          is_loved?: boolean;
+          format?: BookFormat | null;
+          dnf_page?: number | null;
           rating?: number | null;
           date_started?: string | null;
           date_finished?: string | null;
           updated_at?: string;
         };
+      };
+      labels: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          color: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          color?: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          color?: string;
+        };
+      };
+      user_book_labels: {
+        Row: {
+          user_book_id: string;
+          label_id: string;
+        };
+        Insert: {
+          user_book_id: string;
+          label_id: string;
+        };
+        Update: never;
       };
       reviews: {
         Row: {
@@ -348,6 +396,8 @@ export type Database = {
       import_status: ImportStatus;
       import_row_status: ImportRowStatus;
       match_method: MatchMethod;
+      extended_status: ExtendedStatus;
+      book_format: BookFormat;
     };
   };
 };
@@ -359,3 +409,4 @@ export type UserBookRow = Database["public"]["Tables"]["user_books"]["Row"];
 export type ReviewRow = Database["public"]["Tables"]["reviews"]["Row"];
 export type ActivityEventRow =
   Database["public"]["Tables"]["activity_events"]["Row"];
+export type LabelRow = Database["public"]["Tables"]["labels"]["Row"];

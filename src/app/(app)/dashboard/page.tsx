@@ -242,9 +242,9 @@ export default async function DashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Books read" value={counts.read} />
-        <StatCard label="Currently reading" value={counts.currently_reading} />
-        <StatCard label="Want to read" value={counts.want_to_read} />
+        <StatCard label="Finished" value={counts.read} />
+        <StatCard label="Reading Now" value={counts.currently_reading} />
+        <StatCard label="Up Next" value={counts.want_to_read} />
         <StatCard
           label="Average rating"
           value={avgRating !== null ? `${avgRating.toFixed(1)} ★` : "—"}
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {currentYear} reading goal
+              Year in Books — {currentYear}
             </h2>
             <span className="text-sm text-muted-foreground">
               {thisYearCount} / {goalCount} books
@@ -280,7 +280,7 @@ export default async function DashboardPage() {
       {currentlyReading && currentlyReading.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Currently reading
+            Reading Now
           </h2>
           <div className="flex gap-4 overflow-x-auto pb-1">
             {currentlyReading.map((entry) => {
@@ -318,10 +318,10 @@ export default async function DashboardPage() {
       {/* No data state */}
       {books.length === 0 && counts.currently_reading === 0 && (
         <div className="rounded-lg border border-dashed border-border py-16 text-center space-y-3">
-          <p className="text-muted-foreground text-sm">Your reading history will appear here.</p>
+          <p className="text-muted-foreground text-sm">Your reading story starts here. Add your first book to get going.</p>
           <div className="flex justify-center gap-4 text-sm">
             <Link href="/search" className="font-medium underline underline-offset-4 hover:opacity-70">
-              Search for books
+              Find a book
             </Link>
             <Link href="/import" className="font-medium underline underline-offset-4 hover:opacity-70">
               Import from Goodreads
@@ -334,7 +334,7 @@ export default async function DashboardPage() {
       {hasRecommendations && (
         <section className="space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Recommendations
+            Made for You
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {recencyGaps.map((gap) => (
@@ -379,7 +379,7 @@ export default async function DashboardPage() {
       {books.length > 0 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartCard title="Books read by year">
+            <ChartCard title="Year in Books">
               <BooksPerYearChart data={booksByYear} />
             </ChartCard>
             <ChartCard title={`${currentYear} — by month`}>
@@ -388,17 +388,17 @@ export default async function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartCard title="Genre breakdown">
+            <ChartCard title="What you read">
               <GenreChart data={genreBreakdown} />
             </ChartCard>
-            <ChartCard title="Rating distribution">
+            <ChartCard title="How you rated them">
               <RatingChart data={ratingDistribution} />
             </ChartCard>
           </div>
 
           <section className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Highlights
+              Your Reading Story
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {thisYearCount > 0 && (

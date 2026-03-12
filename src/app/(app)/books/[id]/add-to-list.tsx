@@ -79,7 +79,7 @@ export function AddToListButton({ bookId }: { bookId: string }) {
 
           {fetchState === "done" && lists.length === 0 && (
             <div className="px-3 py-3 space-y-2">
-              <p className="text-xs text-muted-foreground">No lists yet.</p>
+              <p className="text-xs text-muted-foreground">No Collections yet.</p>
               <Link
                 href="/lists"
                 className="text-xs font-medium underline underline-offset-2 hover:opacity-80"

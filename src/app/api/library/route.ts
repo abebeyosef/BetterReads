@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { createActivityEvent } from "@/lib/activity";
-import type { ReadingStatus } from "@/types/database";
+import type { ReadingStatus, ExtendedStatus, BookFormat } from "@/types/database";
 
 /**
  * POST /api/library
  * Add a book to the user's library or update an existing entry.
- * Body: { book_id, status, rating?, date_started?, date_finished? }
+ * Body: { book_id, status, rating?, date_started?, date_finished?,
+ *         extended_status?, is_owned?, is_loved?, format?, dnf_page? }
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -13,12 +14,28 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { book_id, status, rating, date_started, date_finished } = body as {
+  const {
+    book_id,
+    status,
+    rating,
+    date_started,
+    date_finished,
+    extended_status,
+    is_owned,
+    is_loved,
+    format,
+    dnf_page,
+  } = body as {
     book_id: string;
     status: ReadingStatus;
     rating?: number | null;
     date_started?: string | null;
     date_finished?: string | null;
+    extended_status?: ExtendedStatus | null;
+    is_owned?: boolean;
+    is_loved?: boolean;
+    format?: BookFormat | null;
+    dnf_page?: number | null;
   };
 
   if (!book_id || !status) {
@@ -30,8 +47,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  if (rating !== undefined && rating !== null && (rating < 1 || rating > 5)) {
-    return Response.json({ error: "Rating must be 1–5" }, { status: 400 });
+  if (rating !== undefined && rating !== null && (rating < 0.25 || rating > 5.0)) {
+    return Response.json({ error: "Rating must be 0.25–5.0" }, { status: 400 });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,10 +72,15 @@ export async function POST(request: Request) {
         rating: rating ?? null,
         date_started: date_started ?? null,
         date_finished: date_finished ?? null,
+        extended_status: extended_status ?? null,
+        ...(is_owned !== undefined ? { is_owned } : {}),
+        ...(is_loved !== undefined ? { is_loved } : {}),
+        format: format ?? null,
+        dnf_page: dnf_page ?? null,
       },
       { onConflict: "user_id,book_id" }
     )
-    .select("id, status, rating, date_started, date_finished")
+    .select("id, status, extended_status, is_owned, is_loved, format, rating, date_started, date_finished")
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -83,6 +105,42 @@ export async function POST(request: Request) {
       },
     });
   }
+
+  return Response.json({ user_book: data });
+}
+
+/**
+ * PATCH /api/library
+ * Update specific fields on an existing user_books entry.
+ * Body: { book_id, is_loved?, is_owned?, extended_status?, format?, dnf_page? }
+ */
+export async function PATCH(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { book_id, ...fields } = body as {
+    book_id: string;
+    is_loved?: boolean;
+    is_owned?: boolean;
+    extended_status?: ExtendedStatus | null;
+    format?: BookFormat | null;
+    dnf_page?: number | null;
+  };
+
+  if (!book_id) return Response.json({ error: "book_id required" }, { status: 400 });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from("user_books")
+    .update(fields)
+    .eq("user_id", user.id)
+    .eq("book_id", book_id)
+    .select("id, status, extended_status, is_owned, is_loved, format, rating, date_started, date_finished")
+    .single();
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ user_book: data });
 }

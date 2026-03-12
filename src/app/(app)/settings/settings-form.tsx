@@ -197,10 +197,10 @@ export function SettingsForm({
   return (
     <form onSubmit={handleSave} className="space-y-8">
 
-      {/* Appearance */}
+      {/* How It Looks */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Appearance
+          How It Looks
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {THEMES.map((t) => {
@@ -344,7 +344,7 @@ export function SettingsForm({
       {/* Reading goal */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Reading goal
+          Year in Books Goal
         </h2>
         <div className="space-y-1">
           <label htmlFor="readingGoal" className="text-sm font-medium">
