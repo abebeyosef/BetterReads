@@ -8,22 +8,30 @@ import { WavesIllo } from "@/components/illustrations/WavesIllo";
 import { FernIllo } from "@/components/illustrations/FernIllo";
 
 type SortOption = "recent" | "finished" | "rating" | "title";
+type FilterStatus = ReadingStatus | "on_hold" | "left_behind" | "loved";
 
 type PageProps = {
   searchParams: Promise<{ status?: string; sort?: string }>;
 };
 
-const STATUS_LABELS: Record<ReadingStatus, string> = {
+const STATUS_LABELS: Record<FilterStatus, string> = {
   want_to_read: "Up Next",
   currently_reading: "Reading Now",
   read: "Finished",
+  on_hold: "On Hold",
+  left_behind: "Left Behind",
+  loved: "Loved",
 };
 
-const TABS: ReadingStatus[] = ["currently_reading", "want_to_read", "read"];
+const PRIMARY_TABS: ReadingStatus[] = ["currently_reading", "want_to_read", "read"];
+const EXTENDED_TABS: FilterStatus[] = ["on_hold", "left_behind", "loved"];
 
 type LibraryEntry = {
   id: string;
   status: ReadingStatus;
+  extended_status: string | null;
+  is_loved: boolean;
+  format: string | null;
   rating: number | null;
   date_started: string | null;
   date_finished: string | null;
@@ -37,16 +45,19 @@ type LibraryEntry = {
   };
 };
 
+function parseFilterStatus(raw: string | undefined): FilterStatus {
+  const valid: FilterStatus[] = ["currently_reading", "want_to_read", "read", "on_hold", "left_behind", "loved"];
+  if (raw && valid.includes(raw as FilterStatus)) return raw as FilterStatus;
+  return "currently_reading";
+}
+
 export default async function LibraryPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { status: rawStatus, sort: rawSort } = await searchParams;
-  const activeStatus: ReadingStatus =
-    rawStatus === "want_to_read" || rawStatus === "read"
-      ? rawStatus
-      : "currently_reading";
+  const activeFilter: FilterStatus = parseFilterStatus(rawStatus);
   const sort: SortOption =
     rawSort === "finished" || rawSort === "rating" || rawSort === "title"
       ? rawSort
@@ -55,47 +66,68 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
-  const { data: entries } = await db
+  // Build query based on filter type
+  let query = db
     .from("user_books")
     .select(`
-      id, status, rating, date_started, date_finished, created_at,
+      id, status, extended_status, is_loved, format, rating, date_started, date_finished, created_at,
       books (
         id, title, cover_url, published_date,
         book_authors ( authors ( name ) )
       )
     `)
-    .eq("user_id", user.id)
-    .eq("status", activeStatus) as { data: LibraryEntry[] | null };
+    .eq("user_id", user.id);
+
+  if (activeFilter === "on_hold") {
+    query = query.eq("extended_status", "on_hold");
+  } else if (activeFilter === "left_behind") {
+    query = query.eq("extended_status", "left_behind");
+  } else if (activeFilter === "loved") {
+    query = query.eq("is_loved", true);
+  } else {
+    query = query.eq("status", activeFilter);
+  }
+
+  const { data: entries } = await query as { data: LibraryEntry[] | null };
 
   const sorted = sortEntries(entries ?? [], sort);
 
   // Count per status for tab badges
-  const { data: counts } = await db
+  const { data: allUserBooks } = await db
     .from("user_books")
-    .select("status")
-    .eq("user_id", user.id) as { data: { status: ReadingStatus }[] | null };
+    .select("status, extended_status, is_loved")
+    .eq("user_id", user.id) as {
+      data: { status: ReadingStatus; extended_status: string | null; is_loved: boolean }[] | null
+    };
 
   const countMap = {
-    currently_reading: counts?.filter((r) => r.status === "currently_reading").length ?? 0,
-    want_to_read: counts?.filter((r) => r.status === "want_to_read").length ?? 0,
-    read: counts?.filter((r) => r.status === "read").length ?? 0,
+    currently_reading: allUserBooks?.filter((r) => r.status === "currently_reading").length ?? 0,
+    want_to_read: allUserBooks?.filter((r) => r.status === "want_to_read").length ?? 0,
+    read: allUserBooks?.filter((r) => r.status === "read").length ?? 0,
+    on_hold: allUserBooks?.filter((r) => r.extended_status === "on_hold").length ?? 0,
+    left_behind: allUserBooks?.filter((r) => r.extended_status === "left_behind").length ?? 0,
+    loved: allUserBooks?.filter((r) => r.is_loved).length ?? 0,
   };
 
-  // Count books in user's library missing a cover
-  let nullCoverCount = 0;
-  const { data: userBookIds } = await db
-    .from("user_books")
-    .select("book_id")
-    .eq("user_id", user.id) as { data: { book_id: string }[] | null };
+  const totalCount = (allUserBooks?.length ?? 0);
 
-  if (userBookIds && userBookIds.length > 0) {
-    const ids = userBookIds.map((r) => r.book_id);
-    const { count } = await db
-      .from("books")
-      .select("id", { count: "exact", head: true })
-      .in("id", ids)
-      .is("cover_url", null) as { count: number | null };
-    nullCoverCount = count ?? 0;
+  // Count books missing a cover
+  let nullCoverCount = 0;
+  if (allUserBooks && allUserBooks.length > 0) {
+    const { data: userBookIds } = await db
+      .from("user_books")
+      .select("book_id")
+      .eq("user_id", user.id) as { data: { book_id: string }[] | null };
+
+    if (userBookIds && userBookIds.length > 0) {
+      const ids = userBookIds.map((r) => r.book_id);
+      const { count } = await db
+        .from("books")
+        .select("id", { count: "exact", head: true })
+        .in("id", ids)
+        .is("cover_url", null) as { count: number | null };
+      nullCoverCount = count ?? 0;
+    }
   }
 
   return (
@@ -106,7 +138,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
           <div>
             <h1 className="text-2xl font-bold">My Library</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {countMap.read + countMap.currently_reading + countMap.want_to_read} books total
+              {totalCount} books total
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -131,32 +163,53 @@ export default async function LibraryPage({ searchParams }: PageProps) {
       <EnrichBooksButton nullCoverCount={nullCoverCount} />
 
       {/* Status tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {TABS.map((s) => (
-          <Link
-            key={s}
-            href={`/library?status=${s}&sort=${sort}`}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              activeStatus === s
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {STATUS_LABELS[s]}
-            <span className="ml-1.5 text-xs opacity-60">{countMap[s]}</span>
-          </Link>
-        ))}
+      <div className="space-y-0">
+        {/* Primary tabs */}
+        <div className="flex gap-1 border-b border-border">
+          {PRIMARY_TABS.map((s) => (
+            <Link
+              key={s}
+              href={`/library?status=${s}&sort=${sort}`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeFilter === s
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {STATUS_LABELS[s]}
+              <span className="ml-1.5 text-xs opacity-60">{countMap[s]}</span>
+            </Link>
+          ))}
+          <div className="flex-1" />
+          {/* Extended filter tabs */}
+          {EXTENDED_TABS.map((s) => (
+            <Link
+              key={s}
+              href={`/library?status=${s}&sort=${sort}`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeFilter === s
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {STATUS_LABELS[s]}{s === "loved" ? " ♥" : ""}
+              {countMap[s] > 0 && (
+                <span className="ml-1.5 text-xs opacity-60">{countMap[s]}</span>
+              )}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Sort controls */}
       {sorted.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Sort:</span>
-          {(["recent", "rating", "title", ...(activeStatus === "read" ? ["finished"] : [])] as SortOption[]).map(
+          {(["recent", "rating", "title", ...(activeFilter === "read" ? ["finished"] : [])] as SortOption[]).map(
             (s) => (
               <Link
                 key={s}
-                href={`/library?status=${activeStatus}&sort=${s}`}
+                href={`/library?status=${activeFilter}&sort=${s}`}
                 className={`capitalize hover:text-foreground transition-colors ${
                   sort === s ? "text-foreground font-medium" : ""
                 }`}
@@ -170,7 +223,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 
       {/* Results */}
       {sorted.length === 0 ? (
-        <EmptyState status={activeStatus} />
+        <EmptyState filter={activeFilter} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {sorted.map((entry) => (
@@ -230,6 +283,11 @@ function BookCard({ entry }: { entry: LibraryEntry }) {
             {"★".repeat(entry.rating)}
           </div>
         )}
+        {entry.is_loved && (
+          <div className="absolute top-1 right-1 rounded bg-background/80 backdrop-blur px-1 py-0.5 text-xs text-red-500">
+            ♥
+          </div>
+        )}
       </div>
       <div>
         <p className="text-sm font-medium leading-tight line-clamp-2">{book.title}</p>
@@ -241,13 +299,16 @@ function BookCard({ entry }: { entry: LibraryEntry }) {
   );
 }
 
-function EmptyState({ status }: { status: ReadingStatus }) {
-  const messages: Record<ReadingStatus, { text: string; cta: string; href: string }> = {
+function EmptyState({ filter }: { filter: FilterStatus }) {
+  const messages: Record<FilterStatus, { text: string; cta: string; href: string }> = {
     currently_reading: { text: "Nothing on the go yet — what are you starting next?", cta: "Find something to read", href: "/search" },
     want_to_read: { text: "Your Up Next shelf is empty. What's calling to you?", cta: "Discover books", href: "/search" },
     read: { text: "Your shelf is waiting. Import your Goodreads library or add your first book.", cta: "Import from Goodreads", href: "/import" },
+    on_hold: { text: "No books on hold. Books you pause get collected here.", cta: "Browse your library", href: "/library" },
+    left_behind: { text: "No books left behind. DNF'd books will appear here.", cta: "Browse your library", href: "/library" },
+    loved: { text: "No loved books yet. Mark a book as loved from its page.", cta: "Browse your library", href: "/library" },
   };
-  const { text, cta, href } = messages[status];
+  const { text, cta, href } = messages[filter];
   return (
     <div className="py-12 text-center space-y-4">
       <FernIllo className="mx-auto w-40 h-32 opacity-70" />

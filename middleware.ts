@@ -49,7 +49,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/import") ||
     pathname.startsWith("/lists") ||
     pathname.startsWith("/settings") ||
-    pathname.startsWith("/invite");
+    pathname.startsWith("/invite") ||
+    pathname.startsWith("/discover") ||
+    pathname.startsWith("/stats") ||
+    pathname.startsWith("/checkins") ||
+    pathname.startsWith("/onboarding");
 
   if (isProtected && !user) {
     const redirectUrl = new URL("/login", request.url);

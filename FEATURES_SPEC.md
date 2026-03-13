@@ -1290,7 +1290,631 @@ Always use these names in UI copy, never their StoryGraph equivalents:
 
 ---
 
-*End of FEATURES_SPEC.md — Phases 6–9 fully specified.*
-*Schema: `supabase/migrations/002_features.sql`*
+## Phase 7 — Additions (Stats, Data & Discovery gaps)
+
+> These were missing from the original Phase 7 spec. Add them after 7.10.
+> Schema is in `supabase/migrations/003_additional_features.sql`.
+
+---
+
+### 7.11 Multiple Reading Goals (Books + Pages + Listening Hours)
+
+**What it is:** Users can set up to three annual reading goals — one for books finished, one for pages read, and one for listening hours. All are optional and independent.
+
+**Schema:** `reading_goals` table (in migration 003). Replaces the `reading_goal_count` / `reading_goal_year` columns on `users`.
+
+**Settings UI ("Year in Books Goal" section — expand to three goal types):**
+
+```
+Year in Books — 2026
+
+  Books finished      [24]  books
+  Pages read          [____]  pages    (optional)
+  Listening hours     [____]  hours    (optional)
+
+[Save goals]
+```
+
+**Dashboard — three progress bars (one per active goal):**
+
+```
+Year in Books — 2026
+
+  📚 Books     18 / 24   ░░░░░░░░░░░░░░░░░░ 75%
+  📄 Pages     4,821 / 10,000  ░░░░░░░░░░░░░ 48%
+  🎧 Listening  12 / 30 hrs   ░░░░░░░░ 40%
+```
+
+Pages are summed from `books.page_count` for all finished books with `date_finished` in the current year. Listening hours are summed from `user_books.listening_minutes / 60` for audiobook-format finished books.
+
+**API:**
+- `GET /api/goals?year=2026` — returns all goals for the user for that year
+- `PUT /api/goals` — body `{ year, goals: [{ goal_type, target }] }` — upserts all goals for a year
+
+---
+
+### 7.12 Shareable Reading Wrap-Ups
+
+**What it is:** A beautifully designed, downloadable graphic summarising the user's reading for a month or year. Users can share it to social media. StoryGraph calls this their "Monthly Wrap-Up" — BetterReads calls it a **Reading Card**.
+
+**Two types:**
+- **Monthly Reading Card** — available for any past month
+- **Year in Books Card** — available for any completed year
+
+**Route: `/stats/reading-card`**
+
+```
+Your Reading Card
+
+  Time period:  [March 2026 ▾]    [Monthly ▾]
+
+  ┌───────────────────────────────────────────────┐
+  │           BetterReads                         │
+  │      March 2026 Reading Card                  │
+  │                                               │
+  │   📚  6 books   ·   1,847 pages               │
+  │                                               │
+  │   Top Vibes:  Cosy · Gripping · Emotional     │
+  │   Top Genre:  Fantasy                         │
+  │   Average ★:  4.1                             │
+  │                                               │
+  │   ⭐ Loved:  The Name of the Wind             │
+  │   ⚡ Fastest:  Piranesi (2 days)             │
+  │                                               │
+  │   [book cover thumbnails in a row]            │
+  │                                               │
+  │      [Driftwood theme decoration]             │
+  └───────────────────────────────────────────────┘
+
+  [Download as image]   [Copy link]
+```
+
+**Implementation approach:** Render the card as a `<div>` styled to 1200×630px (social share dimensions). Use the `html2canvas` npm library to convert it to a PNG that the user can download. The card respects the user's active theme (CSS variables).
+
+**API:**
+- `GET /api/stats/reading-card?year=2026&month=3` — returns the computed data for the card (books, pages, vibes, top genre, avg rating, loved book, fastest read)
+- `POST /api/stats/reading-card` — optionally saves a snapshot to `reading_wrapups` table for sharing
+
+**Shareable link:** `/stats/reading-card/[userId]?year=2026&month=3` — public page showing someone else's Reading Card (no download button, read-only).
+
+**Components:**
+- `src/components/stats/ReadingCard.tsx` — the card component (renders the graphic)
+- `src/app/(app)/stats/reading-card/page.tsx` — the generator page with period picker + download button
+- `src/app/(app)/stats/reading-card/[userId]/page.tsx` — public shareable view
+
+---
+
+### 7.13 Compare Stats
+
+**What it is:** Side-by-side comparison of reading data across two time periods, or between the user and another reader. BetterReads calls this **Reading Replay**.
+
+**Route: `/stats/compare`**
+
+**Mode 1 — Compare two of your own periods:**
+
+```
+Reading Replay
+
+Compare  [2025 ▾]   vs   [2026 ▾]
+
+               2025        2026
+  Books         31          18  (so far)
+  Pages       9,241       4,821
+  Avg rating   3.9 ★       4.1 ★
+  Top genre   Fantasy     Literary
+
+  Genres (double bar chart)
+  ████████ Fantasy         ████████████ Literary Fiction
+  ██████   Sci-Fi          █████        Fantasy
+  ████     Romance         ███          Mystery
+  ...
+
+  Vibes comparison (pill counts side by side)
+```
+
+**Mode 2 — Compare with another reader:**
+
+```
+Reading Replay
+
+Your reading  vs  [@aisha ▾]    (only works if aisha follows you back)
+
+  [Same double bar chart layout]
+```
+
+**API:**
+- `GET /api/stats/compare?period_a=2025&period_b=2026` — returns stats for both periods
+- `GET /api/stats/compare?period_a=2026&compare_user=aisha` — compares with another user (requires mutual follow)
+
+**Component:** `src/components/stats/CompareStats.tsx` — takes two stat objects and renders the double-bar layout using recharts.
+
+---
+
+### 7.14 Author Stats
+
+**What it is:** A dedicated "Authors" section within Your Reading Story showing deep author-level analytics.
+
+**Add to `/stats` page as a new section after "Authors":**
+
+```
+── Your Authors ──────────────────────────────────────────────
+
+Most read  (books finished)
+  1. Brandon Sanderson   ████████████  12 books   avg ★ 4.3
+  2. Robin Hobb          ████████      8 books    avg ★ 4.7
+  3. Ursula K. Le Guin   ██████        6 books    avg ★ 4.5
+
+Highest rated  (min 2 books)
+  1. Ursula K. Le Guin   ★ 4.5
+  2. Robin Hobb          ★ 4.7  ← wait sorted correctly
+  3. N. K. Jemisin       ★ 4.4
+
+New to me this year
+  14 authors read for the first time
+
+Gender / identity breakdown   (from book metadata where available)
+  Women  48%  ·  Men  38%  ·  Non-binary  6%  ·  Unknown  8%
+```
+
+**Data source:** Computed server-side from `user_books` → `book_authors` → `authors` join. Gender data uses a `gender` column on `authors` table (add via migration if not present — default null, can be populated when books are added/enriched).
+
+---
+
+### 7.15 Stats by Label
+
+**What it is:** Filter the entire Your Reading Story stats view by a specific Label (e.g. "show me stats only for books I tagged 'Favourites'").
+
+**UI:** Add a "Filter by label" dropdown at the top of `/stats`:
+
+```
+Your Reading Story     [All books ▾]   [2026 ▾]
+                       └ All books
+                         Favourites
+                         Beach reads
+                         Book club picks
+                         ...
+```
+
+When a label is selected, all stats (counts, charts, genres, vibes, authors) are recomputed using only books that have that label applied. The page re-fetches with `?label_id=xxx` query param.
+
+**API change:** Add optional `label_id` param to all stats queries. Server component reads `searchParams.label_id` and joins through `user_book_labels` to filter.
+
+---
+
+### 7.16 Book Discussion Questions
+
+**What it is:** A community question bank on every book's detail page. Anyone can submit a discussion question about a book; others can upvote it. Questions surface in Reading Circle meetings (admins can pull from the bank when setting a meeting agenda).
+
+**Schema:** `book_questions`, `book_question_votes` (in migration 003).
+
+**Component: `<DiscussionQuestions bookId={bookId} />`**
+
+Place on book detail page after Heads Up section:
+
+```
+Discussion Questions
+
+"What did you make of the ending?" ▲ 47
+"How does the setting affect the mood?" ▲ 31
+"Which character surprised you most?" ▲ 28
+
+[+ Add a question]
+```
+
+Clicking "▲" upvotes (or removes your upvote). Sorted by `upvotes DESC`. Show top 5 by default; "Show all X questions" expands.
+
+"[+ Add a question]" opens an inline input: `[Type your question...] [Submit]`.
+
+**In Reading Circles — meeting creation form:**
+
+```
+Questions for this meeting  (optional)
+
+[Browse question bank for {current book} ▾]
+  ○ "What did you make of the ending?" (47 upvotes)
+  ○ "How does the setting affect the mood?" (31 upvotes)
+  ○ "Which character surprised you most?" (28 upvotes)
+
+[+ Add your own question]
+```
+
+Selected questions are stored as text in `circle_meetings` (add `discussion_questions text[]` column in next migration, or store in `note` field).
+
+**API:**
+- `GET /api/books/[id]/questions` — returns questions sorted by upvotes, with `user_voted` bool
+- `POST /api/books/[id]/questions` — body `{ question: string }` — creates question
+- `POST /api/books/[id]/questions/[questionId]/vote` — toggle upvote
+- `DELETE /api/books/[id]/questions/[questionId]` — delete own question
+
+---
+
+### 7.17 Updated "Find a Book" Filters
+
+**Add these filters to 7.10 (Find a Book):**
+
+**Fiction / Non-Fiction toggle:**
+```
+[All]  [Fiction]  [Non-fiction]
+```
+Filter via `books.genres` — fiction books contain "Fiction" in any genre element; non-fiction contain "Nonfiction".
+
+**Content warning avoidance:**
+```
+Avoid my Heads Up warnings   [toggle ON/OFF]
+```
+When ON, exclude books that have community-flagged warnings matching the user's `user_comfort_flags`. Query: exclude `book_id` values in `book_content_warnings` where `warning_type_id` is in the user's comfort flags.
+
+**Books I Own filter:**
+```
+[Only books On My Shelf]   (filters to user_books where is_owned = true)
+```
+
+**Themes / Topics filter** (using `book_topic_tags`):
+```
+Themes:  [Found family]  [Anti-hero]  [Heist]  [Time travel]  ...
+```
+Multi-select. Queries `book_topic_tags` for books tagged with all selected topics by any user.
+
+---
+
+## Phase 8 — Additions (Social Depth gaps)
+
+> These were missing from the original Phase 8 spec. Add them after 8.4.
+
+---
+
+### 8.5 Similar Readers
+
+**What it is:** Discover other BetterReads users with similar reading taste, based on shared genres, vibes, and ratings. BetterReads calls this **Readers Like You**.
+
+**How the similarity score works (v1 — simple overlap):**
+1. For each pair of users, compute: `shared_genres / total_unique_genres` (Jaccard similarity on top-3 genres).
+2. Weight by rating correlation on books both users have read and rated.
+3. Score 0–1, stored in `reader_similarity` table (migration 003).
+
+**Trigger:** Score is computed (or updated) when a user finishes a book and rates it. Run as a server action, not blocking.
+
+**Route: `/discover/readers`**
+
+```
+Readers Like You
+
+Based on your reading history, these readers share your taste:
+
+┌────────────────────────────────────────┐
+│ @bookworm_sarah                        │
+│ Loves: Fantasy · Literary · Sci-Fi    │
+│ 94% taste match  · 312 books finished │
+│ [Follow]                              │
+└────────────────────────────────────────┘
+
+┌────────────────────────────────────────┐
+│ @readingwithkai                        │
+│ Loves: Romance · Historical · Mystery  │
+│ 87% taste match  · 201 books finished │
+│ [Follow]                              │
+└────────────────────────────────────────┘
+```
+
+Only show users who have `public` profiles. Limit to top 10 matches.
+
+**Add to `/discover` page** as a section: "Readers Like You →" with 3 preview cards and a link to `/discover/readers`.
+
+**API:**
+- `GET /api/discover/readers` — returns top 10 similar readers for the current user (from `reader_similarity` table)
+- `POST /api/discover/readers/refresh` — re-triggers similarity computation for the current user
+
+---
+
+### 8.6 Circle Group Recommendations
+
+**What it is:** After a Reading Circle has read ≥ 3 books together, BetterReads suggests future picks tailored to the circle's collective taste.
+
+**How it works:**
+1. Aggregate the genres of all books in `circle_book_history` for the circle.
+2. Compute average member rating per book (from `user_books` for all circle members).
+3. Find books: matching top genres, NOT already read by the circle, highly rated platform-wide.
+4. Return top 6 suggestions.
+
+**UI — new tab in Reading Circles: "Suggestions"**
+
+```
+Suggested for The Sunday Page-Turners
+
+Based on 7 books you've read together
+
+┌────────────────────────────────────────┐
+│ [Cover] The Blade Itself              │
+│         Joe Abercrombie               │
+│         Fantasy · Page-Turner         │
+│         ★ 4.3 platform avg            │
+│                                        │
+│  [Suggest to circle]                   │
+└────────────────────────────────────────┘
+```
+
+"Suggest to circle" posts the book to the circle's discussion feed as a suggestion (not a mandate — it's just a discussion post).
+
+**API:**
+- `GET /api/circles/[id]/suggestions` — returns up to 6 book suggestions for the circle
+- Results cached for 24 hours per circle.
+
+---
+
+### 8.7 Circle Book History & Leaderboard
+
+**What it is:** A log of all books a Reading Circle has read together, with a leaderboard ranking them by average member rating. Surfaces as the "Leaderboard" tab in Reading Circles.
+
+**Schema:** `circle_book_history` table (migration 003).
+
+**When a book is logged:** Admins can mark a book as "read by our circle" from the circle's current book panel:
+
+```
+Currently reading: Piranesi  [Mark as finished by the circle]
+```
+
+Clicking "Mark as finished" moves it to `circle_book_history` with `finished_at = today` and sets `current_book_id = null`.
+
+**Leaderboard tab in `/circles/[id]`:**
+
+```
+Leaderboard — Books we've read together
+
+  🥇  The Midnight Library     avg ★ 4.6   (8 members rated)
+  🥈  Piranesi                 avg ★ 4.4   (6 members rated)
+  🥉  The Bear & the Nightingale  avg ★ 4.2   (7 members rated)
+      Jonathan Strange         avg ★ 3.9   (5 members rated)
+      ...
+
+  [12 books read together since Jan 2024]
+```
+
+Average rating is computed from `user_books.rating` for all circle members for each book in `circle_book_history`. Server-side query.
+
+**API:**
+- `GET /api/circles/[id]/leaderboard` — returns `circle_book_history` with computed avg ratings, sorted descending
+- `POST /api/circles/[id]/leaderboard` — body `{ book_id, started_at?, finished_at? }` — marks a book as circle-read (admin only)
+
+---
+
+### 8.8 Start a Reading Together from within a Circle
+
+**What it is:** Circle members can spin up a "Reading Together" buddy read directly from their circle, pre-populated with the circle's current book and all circle members as participants.
+
+**UI — in Reading Circles current book panel:**
+
+```
+Currently reading: Piranesi
+
+[Start a Reading Together for this book →]
+```
+
+Clicking creates a `shared_reads` record with `book_id = current_book_id`, adds all circle members as `shared_read_participants`, and redirects to `/reading-together/[newId]`.
+
+This lets the circle's discussion move into the spoiler-safe, page-locked check-in environment.
+
+**API:**
+- `POST /api/circles/[id]/reading-together` — creates a shared read from the circle's current book + members, returns `{ shared_read_id }`
+
+---
+
+## Phase 9 — Additions
+
+> These were missing from the original Phase 9 spec. Add after 9.4.
+
+---
+
+### 9.5 Barcode Scanner (Mobile)
+
+**What it is:** Users can scan the barcode on a physical book's spine to add it to their library without typing. Works via the device camera.
+
+**Implementation:** Use the `@zxing/browser` library (ZXing — Zebra Crossing) which handles barcode reading from a camera stream in the browser.
+
+**UI:** Add a "Scan barcode 📷" button to the Search page, next to the search input. On click:
+
+```
+[Camera view opens in a modal]
+Point at barcode on the book spine...
+
+[Cancel]
+```
+
+On scan success:
+1. Extract the ISBN-13 from the barcode.
+2. Call `GET /api/books/search?q=[ISBN]` — the existing search route already handles ISBN lookups.
+3. If found, show the book result and allow adding to library.
+4. If not found, offer the "Add missing book" form (feature 9.1) pre-filled with ISBN.
+
+**Component:** `src/components/BarcodeScanner.tsx` — wraps `@zxing/browser` in a modal with a camera video stream.
+
+Only render the scan button when `navigator.mediaDevices` is available (i.e., skip on desktop where no camera is typical, or just let it fail gracefully).
+
+---
+
+### 9.6 Notifications — Meeting Reminders
+
+**Extend the Notifications system (9.3) with meeting reminders:**
+
+When a user RSVPs "Going" to a Reading Circle meeting, schedule reminder notifications:
+- 24 hours before the meeting
+- 1 hour before the meeting
+
+**Implementation:** Use a Supabase Cron job (via `pg_cron` extension) or a Vercel Cron route that runs every hour, checks `circle_meetings` for meetings in the next 24h and 1h, and inserts `notifications` rows for all "going" RSVPs.
+
+**Cron route:** `GET /api/cron/meeting-reminders` — secured with a `CRON_SECRET` environment variable header check. Add to `vercel.json`:
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/meeting-reminders",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+```
+
+---
+
+### 9.7 Content-Warning-Aware Recommendations
+
+**Extend "What's Next?" (7.9) with Heads Up comfort zone filtering:**
+
+When computing recommendations for `/discover`, check the user's `user_comfort_flags`. Exclude any book from results that has community-flagged warnings matching the user's comfort flags with severity `a_lot` or `some`.
+
+Query addition to the "Made for You" algorithm:
+```sql
+AND books.id NOT IN (
+  SELECT book_id FROM book_content_warnings
+  WHERE warning_type_id IN (
+    SELECT warning_type_id FROM user_comfort_flags WHERE user_id = $userId
+  )
+  AND severity IN ('a_lot', 'some')
+)
+```
+
+**UI — add a note on the Discover page:**
+
+```
+Made for You
+
+Showing books that match your taste and respect your Heads Up settings.
+[Update comfort zone →]
+```
+
+---
+
+## Updated Build Order
+
+**Phase 7 (updated — add to end of Phase 7 build order):**
+11. Multiple reading goals (books + pages + listening hours) — 1.5h
+12. Shareable Reading Cards (html2canvas + card component) — 3h
+13. Compare Stats / Reading Replay — 2h
+14. Author Stats section in /stats — 1h
+15. Stats by Label filter — 1h
+16. Discussion Questions on book pages — 2h
+17. Updated Find a Book filters (fiction/nonfiction, content warning avoidance, owned, themes) — 1.5h
+
+**Phase 8 (updated — add to end of Phase 8 build order):**
+6. Similar Readers (/discover/readers) — 3h
+7. Circle Group Recommendations (Suggestions tab) — 2h
+8. Circle Book History + Leaderboard tab — 2h
+9. Start Reading Together from within a Circle — 1h
+
+**Phase 9 (updated — add to end of Phase 9 build order):**
+5. Barcode Scanner — 2h
+6. Meeting reminder cron job — 1h
+7. Content-warning-aware recommendations — 1h
+
+---
+
+## Updated File Structure (additions)
+
+```
+src/
+  app/
+    (app)/
+      stats/
+        page.tsx                        — Your Reading Story (updated with new sections)
+        reading-card/
+          page.tsx                      — Reading Card generator
+          [userId]/
+            page.tsx                    — Public shareable Reading Card
+        compare/
+          page.tsx                      — Reading Replay / Compare Stats
+      discover/
+        page.tsx                        — Updated with Readers Like You section
+        readers/
+          page.tsx                      — Similar Readers full page
+      circles/
+        [id]/
+          suggestions-tab.tsx           — Circle Group Recommendations
+          leaderboard-tab.tsx           — Circle Book History + Leaderboard
+      books/
+        [id]/
+          discussion-questions.tsx      — Discussion Questions component
+    api/
+      goals/
+        route.ts                        — GET / PUT reading goals
+      stats/
+        reading-card/
+          route.ts                      — GET card data
+        compare/
+          route.ts                      — GET comparison data
+      books/
+        [id]/
+          questions/
+            route.ts                    — GET / POST discussion questions
+            [questionId]/
+              vote/
+                route.ts               — POST / DELETE vote
+      circles/
+        [id]/
+          suggestions/
+            route.ts                   — GET circle book suggestions
+          leaderboard/
+            route.ts                   — GET / POST circle book history
+          reading-together/
+            route.ts                   — POST create buddy read from circle
+      discover/
+        readers/
+          route.ts                     — GET similar readers
+          refresh/
+            route.ts                   — POST recompute similarity
+      cron/
+        meeting-reminders/
+          route.ts                     — Cron job for meeting notifications
+  components/
+    BarcodeScanner.tsx                 — Camera barcode scanner modal
+    stats/
+      ReadingCard.tsx                  — Downloadable reading wrap-up card
+      CompareStats.tsx                 — Side-by-side stats comparison
+      AuthorStats.tsx                  — Author breakdown chart
+    circles/
+      SuggestionsTab.tsx               — Circle recommendations
+      LeaderboardTab.tsx               — Circle book history + ratings
+```
+
+---
+
+## Updated Naming Conventions
+
+| Feature | BetterReads name | NOT |
+|---|---|---|
+| Mood tags | Vibes | Moods |
+| Progress log | Check-in | Update |
+| Journal entry | Margin Note | Review / Journal |
+| Content warnings | Heads Up | Trigger warnings |
+| Severity: lots | A lot | Major |
+| Severity: mild | Briefly mentioned | Minor |
+| Buddy read | Reading Together | Buddy read |
+| Public buddy read | Open Read | Read-along |
+| Book club | Reading Circle | Book club |
+| Challenge | Reading Quest | Challenge / Reading challenge |
+| Recommendations | What's Next? | For You / Recommendations |
+| Advanced search | Find a Book | Search |
+| Book pace | Tempo | Pace |
+| Fast pace | Page-Turner | Fast-paced |
+| Reading habit tracker | Reading Streak | Streak |
+| Reading log | Your Reading Story | Stats |
+| Personal genre tags | Labels | Tags |
+| Want to read | Up Next | Want to Read |
+| Currently reading | Reading Now | Currently Reading |
+| DNF / abandoned | Left Behind | DNF |
+| On hold | On Hold | Paused |
+| Physical ownership | On My Shelf | Owned |
+| Shareable stats image | Reading Card | Wrapped / Recap |
+| Stats comparison | Reading Replay | Compare |
+| Users with similar taste | Readers Like You | Similar users |
+| Club's past reads ranking | Leaderboard | — |
+| Club picks AI suggestions | Suggestions | Recommendations |
+| Discussion questions | Discussion Questions | Question bank |
+| Annual goals | Year in Books Goal | Reading challenge |
+
+---
+
+*End of FEATURES_SPEC.md — Phases 6–9 fully specified (v2, updated after StoryGraph audit).*
+*Core schema: `supabase/migrations/002_features.sql`*
+*Additional schema: `supabase/migrations/003_additional_features.sql`*
 *Brand language: `BRAND_LANGUAGE.md`*
 *Design system: `DESIGN_BRIEF.md`*

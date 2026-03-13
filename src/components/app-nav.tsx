@@ -19,6 +19,7 @@ function getInitials(name: string) {
 const NAV_LINKS = [
   { href: "/feed", label: "Feed" },
   { href: "/library", label: "Library" },
+  { href: "/discover", label: "Discover" },
   { href: "/lists", label: "Lists" },
   { href: "/search", label: "Search" },
 ];
@@ -39,6 +40,7 @@ export function AppNav({ profile }: { profile: UserRow }) {
     if (href === "/library") return pathname.startsWith("/library");
     if (href === "/feed") return pathname === "/feed";
     if (href === "/lists") return pathname.startsWith("/lists");
+    if (href === "/discover") return pathname.startsWith("/discover");
     return pathname === href;
   }
 
@@ -100,6 +102,22 @@ export function AppNav({ profile }: { profile: UserRow }) {
                   className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
                 >
                   Profile
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/stats"
+                  className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
+                >
+                  Stats
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link
+                  href="/checkins"
+                  className="flex cursor-pointer items-center rounded px-2 py-1.5 outline-none hover:bg-accent"
+                >
+                  Check-ins
                 </Link>
               </DropdownMenu.Item>
               <DropdownMenu.Item asChild>

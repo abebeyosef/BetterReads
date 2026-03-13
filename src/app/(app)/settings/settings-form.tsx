@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -399,6 +399,28 @@ export function SettingsForm({
         {saving ? "Saving…" : "Save changes"}
       </button>
 
+      {/* What I Like to Read */}
+      <ReadingPreferencesSection />
+
+      {/* Your Reading Data */}
+      <section className="space-y-3 border-t border-border pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Your Reading Data
+        </h2>
+        <div className="rounded-md border border-border bg-card px-4 py-4 space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Export a CSV of your entire library, ratings, and reading dates.
+          </p>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/api/export"; }}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            Download CSV
+          </button>
+        </div>
+      </section>
+
       {/* Danger zone */}
       <section className="space-y-3 border-t border-border pt-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-destructive">
@@ -461,5 +483,142 @@ export function SettingsForm({
         </div>
       </section>
     </form>
+  );
+}
+
+const GENRES = [
+  "Fantasy", "Sci-Fi", "Literary Fiction", "Romance", "Mystery/Thriller",
+  "Historical Fiction", "Horror", "Non-Fiction", "Biography", "Self-Help",
+  "Poetry", "Graphic Novel", "YA", "Children's", "Short Stories",
+];
+
+const TOPICS = [
+  "Magic systems", "Found family", "Unreliable narrator", "Slow burn romance",
+  "Anti-hero", "Political intrigue", "Coming of age", "Heist", "Time travel",
+  "Mythology", "True crime", "Science", "Travel", "Food & cooking", "Art",
+];
+
+const PACES = ["Slow Burn", "Steady", "Page-Turner", "Mix it up"];
+
+function ReadingPreferencesSection() {
+  const [genres, setGenres] = useState<string[]>([]);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [pace, setPace] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load preferences on mount
+  useEffect(() => {
+    fetch("/api/settings/preferences")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.preferences) {
+          setGenres(d.preferences.genres ?? []);
+          setTopics(d.preferences.topics ?? []);
+          setPace(d.preferences.pace_preference ?? "");
+        }
+        setLoaded(true);
+      });
+  }, []);
+
+  function toggle(arr: string[], setArr: (v: string[]) => void, val: string) {
+    setArr(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  }
+
+  async function savePreferences() {
+    setSaving(true);
+    setSaved(false);
+    await fetch("/api/settings/preferences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ genres, topics, pace_preference: pace || null }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <section className="space-y-4 border-t border-border pt-6">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        What I Like to Read
+      </h2>
+
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Genres</label>
+        <div className="flex flex-wrap gap-2">
+          {GENRES.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => toggle(genres, setGenres, g)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                genres.includes(g)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Topics</label>
+        <div className="flex flex-wrap gap-2">
+          {TOPICS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => toggle(topics, setTopics, t)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                topics.includes(t)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Pace preference</label>
+        <div className="flex flex-wrap gap-2">
+          {PACES.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPace(pace === p ? "" : p)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                pace === p
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {saved && (
+        <p className="text-xs text-green-700">Preferences saved.</p>
+      )}
+
+      <button
+        type="button"
+        onClick={savePreferences}
+        disabled={saving}
+        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
+      >
+        {saving ? "Saving..." : "Save preferences"}
+      </button>
+    </section>
   );
 }

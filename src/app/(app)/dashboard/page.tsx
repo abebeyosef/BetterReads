@@ -114,6 +114,7 @@ export default async function DashboardPage() {
     { data: statusRows },
     { data: currentlyReading },
     { data: profile },
+    { data: streak },
   ] = await Promise.all([
     db
       .from("user_books")
@@ -136,6 +137,11 @@ export default async function DashboardPage() {
       .select("reading_goal_year, reading_goal_count")
       .eq("id", user.id)
       .single() as Promise<{ data: Pick<UserRow, "reading_goal_year" | "reading_goal_count"> | null }>,
+    db
+      .from("reading_streaks")
+      .select("current_streak, longest_streak")
+      .eq("user_id", user.id)
+      .maybeSingle() as Promise<{ data: { current_streak: number; longest_streak: number } | null }>,
   ]);
 
   const books = readBooks ?? [];
@@ -250,6 +256,17 @@ export default async function DashboardPage() {
           value={avgRating !== null ? `${avgRating.toFixed(1)} ★` : "—"}
         />
       </div>
+
+      {/* Streak card */}
+      {streak && streak.current_streak > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-border bg-card p-4 space-y-1 col-span-2">
+            <p className="text-xs text-muted-foreground">Reading Streak</p>
+            <p className="text-2xl font-bold">{streak.current_streak} <span className="text-base font-normal text-muted-foreground">days</span></p>
+            <p className="text-xs text-muted-foreground">Longest: {streak.longest_streak} days</p>
+          </div>
+        </div>
+      )}
 
       {/* Reading goal */}
       {goalCount && goalProgress !== null && (

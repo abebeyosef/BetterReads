@@ -6,6 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { LibraryActions } from "./library-actions";
 import { ReviewForm } from "./review-form";
 import { AddToListButton } from "./add-to-list";
+import { VibeCloud } from "./vibe-cloud";
+import { TempoPicker } from "./tempo-picker";
+import { CharacterPicker } from "./character-picker";
+import { HeadsUp } from "./heads-up";
+import { CheckInButton } from "./checkin-button";
+import { MarginNotes } from "./margin-notes";
 import type { UserBookRow } from "@/types/database";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -179,6 +185,29 @@ export default async function BookDetailPage({ params }: PageProps) {
           </h2>
           <p className="text-sm leading-relaxed text-foreground/80">{book.description}</p>
         </div>
+      )}
+
+      {/* Community metadata */}
+      <div className="space-y-6">
+        <VibeCloud bookId={id} userId={user?.id ?? null} />
+        <TempoPicker bookId={id} userId={user?.id ?? null} />
+        <CharacterPicker bookId={id} userId={user?.id ?? null} />
+        <HeadsUp bookId={id} userId={user?.id ?? null} />
+      </div>
+
+      {/* Check-in button (currently reading) */}
+      {userBook?.status === "currently_reading" && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Progress
+          </h2>
+          <CheckInButton bookId={id} pageCount={book.page_count} />
+        </div>
+      )}
+
+      {/* Margin notes (any book in library) */}
+      {userBook && (
+        <MarginNotes bookId={id} />
       )}
 
       {/* Your review */}

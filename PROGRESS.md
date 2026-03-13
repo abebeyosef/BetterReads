@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 7 — Core Enrichment (ready to plan)
-**Last updated:** 2026-03-12
+**Active phase:** Phase 8 — Social Depth (ready to build)
+**Last updated:** 2026-03-13
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Run `supabase/migrations/002_features.sql` in Supabase SQL Editor (required before Phase 6 features go live), then start Phase 7
+**Next task:** Run `supabase/migrations/002_features.sql` AND `003_additional_features.sql` in Supabase SQL Editor (required before Phase 6–7 features go live), then start Phase 8
 
 ---
 
@@ -23,7 +23,7 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 4 | Polish + Hardening | ✅ Complete |
 | Phase 5 | Design Overhaul | ✅ Complete |
 | Phase 6 | Quick Wins | ✅ Complete |
-| Phase 7 | Core Enrichment | 🔲 Planned |
+| Phase 7 | Core Enrichment | ✅ Complete |
 | Phase 8 | Social Depth | 🔲 Planned |
 | Phase 9 | Advanced Features | 🔲 Planned |
 
@@ -49,6 +49,55 @@ Then follow `FEATURES_SPEC.md` phase by phase. Phase 6 first (quick wins):
 6. Public/private collections + profile display
 7. Backdate auto-fill (auto-set finish date on 'read')
 8. Data export CSV endpoint
+
+---
+
+## Phase 7 — Core Enrichment ✅ Complete (2026-03-13)
+
+### Deliverables
+- [x] **Vibes system** — `VibeCloud` component + `GET/POST/DELETE /api/books/[id]/vibes`; max 5 votes per user; community pill cloud on book page
+- [x] **Tempo** — `TempoPicker` (Slow Burn / Steady / Page-Turner) + `GET/POST/DELETE /api/books/[id]/tempo`; community % distribution shown after 3+ votes
+- [x] **Character/Plot driven** — `CharacterPicker` (binary vote) + `GET/POST/DELETE /api/books/[id]/character`
+- [x] **Heads Up (Content Warnings)** — `HeadsUp` component (collapsed by default) + full API; warnings grouped by A lot / Some / Briefly; user comfort flags shown with bell icon; Settings comfort zone section
+- [x] **Check-ins** — `CheckInButton` (log page/percent + optional note) shown when Reading Now; `GET/POST /api/checkins`; `DELETE /api/checkins/[id]`; `/checkins` history page; mini check-in timeline in book details; `MarginNotes` component
+- [x] **Reading Streak** — updated on every check-in POST; streak stat card on dashboard; `GET /api/streak`
+- [x] **Reading Preferences** — "What I Like to Read" in Settings (genres/topics/pace); `/onboarding` 4-step flow for new users; `GET/POST /api/settings/preferences` + `/api/settings/onboarding`
+- [x] **/discover** — "What's Next?" page with Made for You, Because you read X, Trending, Short reads sections; `/discover/find` filter search page
+- [x] **/stats** — "Your Reading Story" — year selector, summary stats, genre/format breakdowns, rating distribution, streak, top authors
+- [x] **Phase 6 gaps fixed** — Library filter bar extended with On Hold / Left Behind / Loved tabs; Export Data section in Settings
+
+### Files added/changed
+- `src/app/(app)/books/[id]/vibe-cloud.tsx`
+- `src/app/(app)/books/[id]/tempo-picker.tsx`
+- `src/app/(app)/books/[id]/character-picker.tsx`
+- `src/app/(app)/books/[id]/heads-up.tsx`
+- `src/app/(app)/books/[id]/checkin-button.tsx`
+- `src/app/(app)/books/[id]/margin-notes.tsx`
+- `src/app/(app)/books/[id]/page.tsx` — integrates all new components
+- `src/app/(app)/checkins/page.tsx`
+- `src/app/(app)/discover/page.tsx` + `discover/find/page.tsx`
+- `src/app/(app)/stats/page.tsx`
+- `src/app/(app)/onboarding/page.tsx`
+- `src/app/(app)/dashboard/page.tsx` — streak stat card
+- `src/app/(app)/library/page.tsx` — extended filter tabs (On Hold / Left Behind / Loved)
+- `src/app/(app)/settings/settings-form.tsx` — Reading Preferences + Export Data sections
+- `src/app/api/books/[id]/vibes/route.ts`
+- `src/app/api/books/[id]/tempo/route.ts`
+- `src/app/api/books/[id]/character/route.ts`
+- `src/app/api/books/[id]/heads-up/route.ts`
+- `src/app/api/checkins/route.ts` + `checkins/[id]/route.ts`
+- `src/app/api/streak/route.ts`
+- `src/app/api/settings/preferences/route.ts`
+- `src/app/api/settings/comfort-zone/route.ts`
+- `src/app/api/settings/onboarding/route.ts`
+- `src/components/app-nav.tsx` — Discover in main nav; Stats + Check-ins in dropdown
+- `middleware.ts` — added /discover, /stats, /checkins, /onboarding to protected paths
+- `supabase/migrations/003_additional_features.sql` — reading_goals, book_questions, circle_book_history, reader_similarity, listening_minutes, reading_wrapups
+
+### Migration note
+Phase 7 features require **both** migrations to be run in Supabase SQL Editor:
+1. `supabase/migrations/002_features.sql`
+2. `supabase/migrations/003_additional_features.sql`
 
 ---
 
