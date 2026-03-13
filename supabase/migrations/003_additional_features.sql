@@ -138,15 +138,15 @@ ALTER TABLE circle_book_history ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Members can view circle book history"
   ON circle_book_history FOR SELECT
-  USING (is_circle_member(circle_id));
+  USING (EXISTS (SELECT 1 FROM circle_members WHERE circle_id = circle_book_history.circle_id AND user_id = auth.uid()));
 
 CREATE POLICY "Members can add to circle book history"
   ON circle_book_history FOR INSERT
-  WITH CHECK (is_circle_member(circle_id) AND auth.uid() = added_by);
+  WITH CHECK (EXISTS (SELECT 1 FROM circle_members WHERE circle_id = circle_book_history.circle_id AND user_id = auth.uid()) AND auth.uid() = added_by);
 
 CREATE POLICY "Admins can remove from circle book history"
   ON circle_book_history FOR DELETE
-  USING (is_circle_admin(circle_id));
+  USING (EXISTS (SELECT 1 FROM circle_members WHERE circle_id = circle_book_history.circle_id AND user_id = auth.uid() AND role = 'host'));
 
 
 -- ============================================================
