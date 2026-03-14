@@ -7,6 +7,8 @@ type SearchParams = Promise<{
   genre?: string;
   min_pages?: string;
   max_pages?: string;
+  fiction?: string;
+  owned?: string;
 }>;
 
 type Book = {
@@ -26,11 +28,23 @@ const GENRE_OPTIONS = [
 ];
 
 export default async function FindPage({ searchParams }: { searchParams: SearchParams }) {
-  const { q, genre, min_pages, max_pages } = await searchParams;
+  const { q, genre, min_pages, max_pages, fiction, owned } = await searchParams;
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+
+  // If "owned" filter is on, get user's owned book IDs first
+  let ownedBookIds: string[] | null = null;
+  if (owned === "true" && user) {
+    const { data: ownedRows } = await db
+      .from("user_books")
+      .select("book_id")
+      .eq("user_id", user.id)
+      .eq("is_owned", true) as { data: { book_id: string }[] | null };
+    ownedBookIds = (ownedRows ?? []).map((r) => r.book_id);
+  }
 
   let query = db
     .from("books")
@@ -53,11 +67,27 @@ export default async function FindPage({ searchParams }: { searchParams: SearchP
     query = query.lte("page_count", parseInt(max_pages));
   }
 
+  // Fiction / Non-Fiction filter
+  if (fiction === "fiction") {
+    query = query.contains("genres", ["Fiction"]);
+  } else if (fiction === "nonfiction") {
+    query = query.contains("genres", ["Nonfiction"]);
+  }
+
+  // Books I Own filter
+  if (ownedBookIds !== null) {
+    if (ownedBookIds.length === 0) {
+      query = query.in("id", ["none"]); // no results
+    } else {
+      query = query.in("id", ownedBookIds);
+    }
+  }
+
   const { data: books } = await query as { data: Book[] | null };
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams();
-    const all = { q, genre, min_pages, max_pages, ...overrides };
+    const all = { q, genre, min_pages, max_pages, fiction, owned, ...overrides };
     for (const [k, v] of Object.entries(all)) {
       if (v) params.set(k, v);
     }
@@ -86,6 +116,8 @@ export default async function FindPage({ searchParams }: { searchParams: SearchP
           {genre && <input type="hidden" name="genre" value={genre} />}
           {min_pages && <input type="hidden" name="min_pages" value={min_pages} />}
           {max_pages && <input type="hidden" name="max_pages" value={max_pages} />}
+          {fiction && <input type="hidden" name="fiction" value={fiction} />}
+          {owned && <input type="hidden" name="owned" value={owned} />}
           <button
             type="submit"
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
@@ -93,6 +125,28 @@ export default async function FindPage({ searchParams }: { searchParams: SearchP
             Search
           </button>
         </form>
+
+        {/* Fiction / Non-Fiction toggle */}
+        <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground">
+          <span>Type:</span>
+          {[
+            { label: "All", value: undefined },
+            { label: "Fiction", value: "fiction" },
+            { label: "Non-fiction", value: "nonfiction" },
+          ].map(({ label, value }) => (
+            <Link
+              key={label}
+              href={buildUrl({ fiction: value })}
+              className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                fiction === value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
 
         {/* Genre filter pills */}
         <div className="flex flex-wrap gap-2">
@@ -139,6 +193,23 @@ export default async function FindPage({ searchParams }: { searchParams: SearchP
             </Link>
           ))}
         </div>
+
+        {/* Books I Own filter */}
+        {user && (
+          <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground">
+            <span>Shelf:</span>
+            <Link
+              href={buildUrl({ owned: owned === "true" ? undefined : "true" })}
+              className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                owned === "true"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Only books on my shelf
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Results */}
@@ -179,7 +250,7 @@ export default async function FindPage({ searchParams }: { searchParams: SearchP
       ) : (
         <div className="py-12 text-center">
           <p className="text-muted-foreground text-sm">
-            {q || genre ? "No books match your filters." : "Use the filters above to find books."}
+            {q || genre || fiction || owned ? "No books match your filters." : "Use the filters above to find books."}
           </p>
         </div>
       )}

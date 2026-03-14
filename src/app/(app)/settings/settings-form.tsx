@@ -68,6 +68,10 @@ export function SettingsForm({
       ? String(profile.reading_goal_count)
       : ""
   );
+  const [pagesGoal, setPagesGoal] = useState<string>("");
+  const [listeningGoal, setListeningGoal] = useState<string>("");
+  const [goalsSaving, setGoalsSaving] = useState(false);
+  const [goalsSaved, setGoalsSaved] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +177,24 @@ export function SettingsForm({
     setSaving(false);
     setAvatarFile(null);
     router.refresh();
+  }
+
+  async function handleSaveGoals() {
+    setGoalsSaving(true);
+    setGoalsSaved(false);
+    const goals = [
+      { goal_type: "books", target: parseInt(readingGoal) || 0 },
+      { goal_type: "pages", target: parseInt(pagesGoal) || 0 },
+      { goal_type: "listening_hours", target: parseInt(listeningGoal) || 0 },
+    ].filter((g) => g.target > 0);
+
+    await fetch("/api/goals", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year: currentYear, goals }),
+    });
+    setGoalsSaving(false);
+    setGoalsSaved(true);
   }
 
   async function handleClearLibrary() {
@@ -341,42 +363,44 @@ export function SettingsForm({
         </div>
       </section>
 
-      {/* Reading goal */}
-      <section className="space-y-3">
+      {/* Reading goals */}
+      <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Year in Books Goal
+          Year in Books — {currentYear}
         </h2>
-        <div className="space-y-1">
-          <label htmlFor="readingGoal" className="text-sm font-medium">
-            Books to read in {currentYear}{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="readingGoal"
-              type="number"
-              min="1"
-              max="365"
-              value={readingGoal}
-              onChange={(e) => setReadingGoal(e.target.value)}
-              placeholder="e.g. 24"
-              className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <span className="text-sm text-muted-foreground">books</span>
-            {readingGoal && (
-              <button
-                type="button"
-                onClick={() => setReadingGoal("")}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Your progress will appear on your dashboard.
-          </p>
+        <div className="space-y-3">
+          {[
+            { id: "readingGoal", label: "Books finished", unit: "books", value: readingGoal, set: setReadingGoal, placeholder: "e.g. 24" },
+            { id: "pagesGoal", label: "Pages read", unit: "pages", value: pagesGoal, set: setPagesGoal, placeholder: "e.g. 10000" },
+            { id: "listeningGoal", label: "Listening hours", unit: "hours", value: listeningGoal, set: setListeningGoal, placeholder: "e.g. 30" },
+          ].map(({ id, label, unit, value, set, placeholder }) => (
+            <div key={id} className="flex items-center gap-3">
+              <label htmlFor={id} className="text-sm font-medium w-36 shrink-0">{label}</label>
+              <input
+                id={id}
+                type="number"
+                min="1"
+                value={value}
+                onChange={(e) => set(e.target.value)}
+                placeholder={placeholder}
+                className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">{unit}</span>
+            </div>
+          ))}
         </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveGoals}
+            disabled={goalsSaving}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {goalsSaving ? "Saving…" : "Save goals"}
+          </button>
+          {goalsSaved && <span className="text-xs text-green-600">Goals saved.</span>}
+        </div>
+        <p className="text-xs text-muted-foreground">Leave blank to skip that goal type.</p>
       </section>
 
       {/* Feedback */}

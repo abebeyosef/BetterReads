@@ -12,6 +12,7 @@ import { CharacterPicker } from "./character-picker";
 import { HeadsUp } from "./heads-up";
 import { CheckInButton } from "./checkin-button";
 import { MarginNotes } from "./margin-notes";
+import { DiscussionQuestions } from "./discussion-questions";
 import type { UserBookRow } from "@/types/database";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -193,6 +194,7 @@ export default async function BookDetailPage({ params }: PageProps) {
         <TempoPicker bookId={id} userId={user?.id ?? null} />
         <CharacterPicker bookId={id} userId={user?.id ?? null} />
         <HeadsUp bookId={id} userId={user?.id ?? null} />
+        <DiscussionQuestions bookId={id} userId={user?.id ?? null} />
       </div>
 
       {/* Check-in button (currently reading) */}
