@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 7 extensions + Phase 8 — Social Depth
+**Active phase:** Phase 8 — Social Depth (ready to build)
 **Last updated:** 2026-03-14
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Run `supabase/migrations/002_features.sql` AND `003_additional_features.sql` in Supabase SQL Editor if not yet done (required for book_questions, book_question_votes, reading_goals tables). Install html2canvas is done (added to package.json). Phase 8 ready to build.
+**Next task:** Phase 8 — Reading Circles, Buddy Reads, Quests. Also: 003_additional_features.sql migration must be run in Supabase SQL Editor if not yet done (required for book_questions, book_question_votes, reading_goals tables).
 
 ---
 
@@ -23,7 +23,7 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 4 | Polish + Hardening | ✅ Complete |
 | Phase 5 | Design Overhaul | ✅ Complete |
 | Phase 6 | Quick Wins | ✅ Complete |
-| Phase 7 | Core Enrichment + Extensions (7.11–7.16) | ✅ Complete |
+| Phase 7 | Core Enrichment + Extensions (7.11–7.17) | ✅ Complete |
 | Phase 8 | Social Depth | 🔲 Planned |
 | Phase 9 | Advanced Features | 🔲 Planned |
 
