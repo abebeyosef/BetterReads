@@ -6,10 +6,10 @@ This file is the single source of truth for what has been built, what decisions 
 
 ## Current Status
 
-**Active phase:** Phase 8 — Social Depth (ready to build)
-**Last updated:** 2026-03-13
+**Active phase:** Phase 7 extensions + Phase 8 — Social Depth
+**Last updated:** 2026-03-14
 **Last worked on by:** Claude (Sonnet 4.6)
-**Next task:** Run `supabase/migrations/002_features.sql` AND `003_additional_features.sql` in Supabase SQL Editor (required before Phase 6–7 features go live), then start Phase 8
+**Next task:** Run `supabase/migrations/002_features.sql` AND `003_additional_features.sql` in Supabase SQL Editor if not yet done (required for book_questions, book_question_votes, reading_goals tables). Install html2canvas is done (added to package.json). Phase 8 ready to build.
 
 ---
 
@@ -23,7 +23,7 @@ This file is the single source of truth for what has been built, what decisions 
 | Phase 4 | Polish + Hardening | ✅ Complete |
 | Phase 5 | Design Overhaul | ✅ Complete |
 | Phase 6 | Quick Wins | ✅ Complete |
-| Phase 7 | Core Enrichment | ✅ Complete |
+| Phase 7 | Core Enrichment + Extensions (7.11–7.16) | ✅ Complete |
 | Phase 8 | Social Depth | 🔲 Planned |
 | Phase 9 | Advanced Features | 🔲 Planned |
 
@@ -92,6 +92,38 @@ Then follow `FEATURES_SPEC.md` phase by phase. Phase 6 first (quick wins):
 - `src/app/api/settings/onboarding/route.ts`
 - `src/components/app-nav.tsx` — Discover in main nav; Stats + Check-ins in dropdown
 - `middleware.ts` — added /discover, /stats, /checkins, /onboarding to protected paths
+
+---
+
+## Phase 7 Extensions (7.11–7.16) ✅ Complete (2026-03-14)
+
+### Deliverables
+- [x] **7.11 Multiple Reading Goals API** — `GET/PUT /api/goals`; delete-then-insert per year; supports goal_type (books/pages/listening) + target
+- [x] **7.12 Reading Card** — `ReadingCard` component + `/stats/reading-card` page (year/month period picker, book count, pages, avg rating, top genre, loved book, fastest read, cover strip); `/stats/reading-card/[userId]` public view; `ReadingCardDownload` client component using html2canvas; `GET /api/stats/reading-card`
+- [x] **7.13 Compare Stats (Reading Replay)** — `/stats/compare` page (year A vs year B, books/pages/avgRating/genres side-by-side bar chart); `GET /api/stats/compare` (also supports compare_user with mutual-follow gate)
+- [x] **7.14+7.15 Stats page upgrades** — label filter (plain HTML `<form method="GET">`), author stats section (most read + highest rated with min 2 books), links to Reading Replay and Reading Card
+- [x] **7.16 Discussion Questions** — `DiscussionQuestions` client component; `GET/POST /api/books/[id]/questions`; `DELETE /api/books/[id]/questions/[questionId]`; `POST /api/books/[id]/questions/[questionId]/vote` (toggle); upvote with optimistic UI; question form with expand/collapse
+
+### Files added/changed
+- `src/app/api/goals/route.ts` — NEW
+- `src/app/api/stats/reading-card/route.ts` — NEW
+- `src/app/api/stats/compare/route.ts` — NEW
+- `src/app/api/books/[id]/questions/route.ts` — NEW
+- `src/app/api/books/[id]/questions/[questionId]/route.ts` — NEW
+- `src/app/api/books/[id]/questions/[questionId]/vote/route.ts` — NEW
+- `src/app/(app)/books/[id]/discussion-questions.tsx` — NEW
+- `src/components/stats/ReadingCard.tsx` — NEW
+- `src/app/(app)/stats/reading-card/page.tsx` — NEW
+- `src/app/(app)/stats/reading-card/reading-card-download.tsx` — NEW
+- `src/app/(app)/stats/reading-card/[userId]/page.tsx` — NEW
+- `src/app/(app)/stats/compare/page.tsx` — NEW
+- `src/app/(app)/stats/page.tsx` — UPDATED (label filter, author stats, nav links)
+- `package.json` — html2canvas added
+
+### DB tables required (run migration if not done)
+- `reading_goals` (id, user_id, year, goal_type, target)
+- `book_questions` (id, book_id, user_id, question, upvotes)
+- `book_question_votes` (id, question_id, user_id)
 - `supabase/migrations/003_additional_features.sql` — reading_goals, book_questions, circle_book_history, reader_similarity, listening_minutes, reading_wrapups
 
 ### Migration note

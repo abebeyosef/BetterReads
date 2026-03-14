@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadingStatus } from "@/types/database";
 
-type SearchParams = Promise<{ year?: string }>;
+type SearchParams = Promise<{ year?: string; label_id?: string }>;
 
 type ReadBook = {
   rating: number | null;
@@ -18,6 +18,8 @@ type ReadBook = {
   };
 };
 
+type LabelRow = { id: string; name: string };
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default async function StatsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -25,12 +27,44 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { year: rawYear } = await searchParams;
+  const { year: rawYear, label_id } = await searchParams;
   const currentYear = new Date().getFullYear();
   const selectedYear = rawYear ? parseInt(rawYear) : currentYear;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+
+  // Fetch user's labels for the filter dropdown
+  const { data: labels } = await db
+    .from("labels")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .order("name") as { data: LabelRow[] | null };
+
+  // Build base query — optionally filtered by label
+  let labeledIds: string[] | null = null;
+  if (label_id) {
+    const { data: labeledBooks } = await db
+      .from("user_book_labels")
+      .select("user_book_id")
+      .eq("label_id", label_id)
+      .eq("user_id", user.id) as { data: { user_book_id: string }[] | null };
+    labeledIds = (labeledBooks ?? []).map((r) => r.user_book_id);
+  }
+
+  let booksQuery = db
+    .from("user_books")
+    .select("rating, date_finished, date_started, format, books(title, page_count, genres, book_authors(authors(name)))")
+    .eq("user_id", user.id)
+    .eq("status", "read");
+
+  if (labeledIds !== null) {
+    if (labeledIds.length === 0) {
+      booksQuery = booksQuery.in("id", ["none"]);
+    } else {
+      booksQuery = booksQuery.in("id", labeledIds);
+    }
+  }
 
   const [
     { data: allBooks },
@@ -38,11 +72,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
     { data: streak },
     { data: profile },
   ] = await Promise.all([
-    db
-      .from("user_books")
-      .select("rating, date_finished, date_started, format, books(title, page_count, genres, book_authors(authors(name)))")
-      .eq("user_id", user.id)
-      .eq("status", "read") as Promise<{ data: ReadBook[] | null }>,
+    booksQuery as Promise<{ data: ReadBook[] | null }>,
     db
       .from("user_books")
       .select("status, is_loved")
@@ -65,7 +95,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
     return new Date(b.date_finished).getFullYear() === selectedYear;
   });
 
-  // Summary stats
+  // Summary stats (all-time — not filtered by label)
   const counts = {
     read: statusRows?.filter((r) => r.status === "read").length ?? 0,
     currently_reading: statusRows?.filter((r) => r.status === "currently_reading").length ?? 0,
@@ -116,19 +146,39 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
     : null;
   const maxRatingCount = Math.max(1, ...[1, 2, 3, 4, 5].map((r) => yearBooks.filter((b) => b.rating === r).length));
 
-  // Authors
-  const authorMap: Record<string, number> = {};
+  // Author stats
+  type AuthorStats = { count: number; totalRating: number; ratedCount: number };
+  const authorMap: Record<string, AuthorStats> = {};
   for (const b of yearBooks) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const authors = b.books?.book_authors?.map((ba: any) => ba.authors?.name).filter(Boolean) ?? [];
     for (const author of authors) {
-      authorMap[author] = (authorMap[author] ?? 0) + 1;
+      if (!authorMap[author]) authorMap[author] = { count: 0, totalRating: 0, ratedCount: 0 };
+      authorMap[author].count += 1;
+      if (b.rating !== null) {
+        authorMap[author].totalRating += b.rating;
+        authorMap[author].ratedCount += 1;
+      }
     }
   }
   const topAuthors = Object.entries(authorMap)
-    .map(([author, count]) => ({ author, count }))
+    .map(([author, { count, totalRating, ratedCount }]) => ({
+      author,
+      count,
+      avgRating: ratedCount > 0 ? totalRating / ratedCount : null,
+    }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
+
+  const highestRated = Object.entries(authorMap)
+    .map(([author, { count, totalRating, ratedCount }]) => ({
+      author,
+      count,
+      avgRating: ratedCount >= 2 ? totalRating / ratedCount : null,
+    }))
+    .filter((a) => a.avgRating !== null)
+    .sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0))
+    .slice(0, 5);
 
   // Year selector range
   const availableYears: number[] = [];
@@ -141,16 +191,28 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
   if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
   availableYears.sort((a, b) => b - a);
 
+  const selectedLabel = labels?.find((l) => l.id === label_id) ?? null;
+
+  function buildUrl(overrides: { year?: number; label_id?: string | null }) {
+    const p = new URLSearchParams();
+    const y = overrides.year ?? selectedYear;
+    const lid = "label_id" in overrides ? overrides.label_id : label_id;
+    p.set("year", String(y));
+    if (lid) p.set("label_id", lid);
+    return `/stats?${p.toString()}`;
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-10">
       {/* Header */}
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-2xl font-bold">Your Reading Story</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Year filter */}
           {availableYears.map((y) => (
             <Link
               key={y}
-              href={`/stats?year=${y}`}
+              href={buildUrl({ year: y })}
               className={`text-sm px-3 py-1 rounded-full transition-colors ${
                 y === selectedYear
                   ? "bg-primary text-primary-foreground"
@@ -162,6 +224,33 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
           ))}
         </div>
       </div>
+
+      {/* Label filter */}
+      {labels && labels.length > 0 && (
+        <form method="GET" action="/stats" className="flex items-center gap-2">
+          <input type="hidden" name="year" value={String(selectedYear)} />
+          <label htmlFor="label_id" className="text-xs text-muted-foreground">Filter by label:</label>
+          <select
+            id="label_id"
+            name="label_id"
+            defaultValue={label_id ?? ""}
+            className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground focus:outline-none"
+          >
+            <option value="">All books</option>
+            {labels.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+          <button type="submit" className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80 transition-colors">
+            Filter
+          </button>
+          {selectedLabel && (
+            <Link href={buildUrl({ label_id: null })} className="text-xs text-muted-foreground underline">
+              Clear
+            </Link>
+          )}
+        </form>
+      )}
 
       {/* Summary stats */}
       <section className="space-y-3">
@@ -178,6 +267,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {selectedYear} in Books
+          {selectedLabel && <span className="ml-2 normal-case font-normal opacity-70">({selectedLabel.name})</span>}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard label={`Read in ${selectedYear}`} value={yearBooks.length} />
@@ -216,10 +306,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
                 <div key={genre} className="flex items-center gap-3">
                   <span className="w-32 text-sm text-muted-foreground truncate">{genre}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
                 </div>
@@ -279,28 +366,60 @@ export default async function StatsPage({ searchParams }: { searchParams: Search
         </section>
       )}
 
-      {/* Top authors */}
+      {/* Author stats */}
       {topAuthors.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Authors</h2>
-          <div className="space-y-2">
-            {topAuthors.map(({ author, count }, i) => (
-              <div key={author} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-5">{i + 1}</span>
-                  <Link
-                    href={`/search?q=${encodeURIComponent(author)}`}
-                    className="hover:underline"
-                  >
-                    {author}
-                  </Link>
-                </div>
-                <span className="text-xs text-muted-foreground">{count} book{count === 1 ? "" : "s"}</span>
-              </div>
-            ))}
+        <section className="space-y-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your Authors</h2>
+
+          {/* Most read */}
+          <div className="space-y-3">
+            <h3 className="text-xs text-muted-foreground">Most read</h3>
+            <div className="space-y-2">
+              {topAuthors.map(({ author, count, avgRating: ar }, i) => {
+                const pct = Math.round((count / (topAuthors[0].count || 1)) * 100);
+                return (
+                  <div key={author} className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
+                    <div className="flex-1 space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <Link href={`/search?q=${encodeURIComponent(author)}`} className="text-sm hover:underline">{author}</Link>
+                        <span className="text-xs text-muted-foreground">{count} book{count === 1 ? "" : "s"}{ar !== null ? ` · ${ar.toFixed(1)}★` : ""}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Highest rated */}
+          {highestRated.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs text-muted-foreground">Highest rated (min 2 books)</h3>
+              <div className="space-y-1.5">
+                {highestRated.map(({ author, avgRating: ar }, i) => (
+                  <div key={author} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-4">{i + 1}</span>
+                      <Link href={`/search?q=${encodeURIComponent(author)}`} className="hover:underline">{author}</Link>
+                    </div>
+                    <span className="text-xs text-yellow-500 font-medium">{ar?.toFixed(1)} ★</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
+
+      {/* Nav to compare / reading card */}
+      <div className="flex gap-4 text-sm text-muted-foreground border-t border-border pt-4">
+        <Link href="/stats/compare" className="hover:text-foreground transition-colors">Reading Replay →</Link>
+        <Link href="/stats/reading-card" className="hover:text-foreground transition-colors">Reading Card →</Link>
+      </div>
 
       {yearBooks.length === 0 && (
         <div className="py-12 text-center space-y-3">
